@@ -312,7 +312,14 @@ def generate_daily_report():
             p_vwap = subset["poly_up_vwap"].mean() if "poly_up_vwap" in subset.columns else 0
             k_vwap = subset["kalshi_yes_vwap"].mean() if "kalshi_yes_vwap" in subset.columns else 0
             c_vwap = subset["combined_vwap"].mean() if "combined_vwap" in subset.columns else 0
-            status_mode = subset["execution_status"].mode()[0] if ("execution_status" in subset.columns and not subset["execution_status"].empty) else "-"
+            
+            # Safe status mode resolution to avoid KeyError
+            status_mode = "-"
+            if "execution_status" in subset.columns and not subset["execution_status"].dropna().empty:
+                modes = subset["execution_status"].mode()
+                if not modes.empty:
+                    status_mode = modes.iloc[0]
+
             lines.append(f"| {asset} | {avg_055:.0f} | ${p_vwap:.3f} | ${k_vwap:.3f} | ${c_vwap:.3f} | {status_mode} |")
         lines.append("")
     else:
