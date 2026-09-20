@@ -1,23 +1,28 @@
 from fill_model import calculate_vwap_fill
 
 """
-Gap-Maker Depth & Liquidity Monitor + Daily Report
---------------------------------------------------
-Companion for Prinxe-crypto/Gap-maker
-
-- Snapshots full order books on new OPEN and CLOSED positions
-- Calculates depth & estimated VWAP fill for target share sizes
-- Writes clean GitHub summary tables
-- Generates a Daily Performance + Depth Report
+Gap-Maker Depth & Liquidity Monitor + Daily Report  (patched)
+-------------------------------------------------------------
+Fixes vs previous version:
+  1. Kalshi books hold BIDS only. Ask for YES = 1 - best NO bid, ask for NO = 1 - best YES bid.
+  2. Combined cost now uses the trade's real legs (A = Poly Up + Kalshi No, B = Poly Down + Kalshi Yes).
+  3. Asks are sorted ascending before walking the ladder.
+  4. Stale snapshots (taken long after logged_at) are tagged STALE_SNAPSHOT and excluded from the report.
+  5. Failed book fetches are tagged ERROR_BOOK_UNAVAILABLE instead of looking like thin depth.
+  6. No depth snapshot on CLOSED trades (expired books are useless).
+  7. Combined VWAP is only computed when BOTH legs fill. Report only averages valid rows.
+  8. Logs minutes_into_window so results can be split by entry timing.
 """
 
 import os
+import re
 import time
 import json
 import requests
 import pandas as pd
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 # ========== CONFIG ==========
 GAP_MAKER_REPO = "Prinxe-crypto/Gap-maker"
@@ -34,8 +39,11 @@ KALSHI_BASE = "https://external-api.kalshi.com/trade-api/v2"
 CLOB_BASE = "https://clob.polymarket.com"
 GAMMA_BASE = "https://gamma-api.polymarket.com"
 
+MAX_SNAPSHOT_AGE_SEC = 90   # older than this after logged_at => STALE_SNAPSHOT
+VALID_STATUSES = ("FILLED", "SKIPPED_INSUFFICIENT_DEPTH", "SKIPPED_COST_EXCEEDED")
+
 SESSION = requests.Session()
-SESSION.headers.update({"Accept": "application/json", "User-Agent": "depth-monitor/1.2"})
+SESSION.headers.update({"Accept": "application/json", "User-Agent": "depth-monitor/1.3"})
 
 
 def get_json(url, params=None, retries=3):
@@ -46,6 +54,7 @@ def get_json(url, params=None, retries=3):
                 return r.json()
             if r.status_code == 404:
                 return None
+            time.sleep(1.5 ** attempt)          # 429 / 5xx: back off and retry
         except Exception:
             time.sleep(1.5 ** attempt)
     return None
@@ -64,13 +73,14 @@ def save_json_set(path, data):
 
 
 def get_poly_book(token_id):
+    """Returns (book, ok). ok=False means the fetch failed (not the same as an empty book)."""
     data = get_json(f"{CLOB_BASE}/book", params={"token_id": token_id})
-    if not data:
-        return {"bids": [], "asks": []}
+    if data is None:
+        return {"bids": [], "asks": []}, False
     return {
         "bids": [(float(x["price"]), float(x["size"])) for x in data.get("bids", [])],
         "asks": [(float(x["price"]), float(x["size"])) for x in data.get("asks", [])],
-    }
+    }, True
 
 
 def get_poly_tokens(slug):
@@ -83,84 +93,125 @@ def get_poly_tokens(slug):
     return tokens, outcomes
 
 
-def get_kalshi_orderbook(ticker):
+def _levels(arr):
+    """Normalise [[price, size], ...] to [(price_in_dollars, size)]. Legacy books use cents."""
+    out = []
+    for p, s in (arr or []):
+        p, s = float(p), float(s)
+        if p > 1.0:
+            p /= 100.0
+        out.append((p, s))
+    return out
+
+
+def kalshi_asks_from_book(ob):
+    """Kalshi books contain BIDS only.
+       To BUY YES you hit the best NO bid: ask_yes = 1 - no_bid.
+       To BUY NO  you hit the best YES bid: ask_no  = 1 - yes_bid."""
+    yes_bids = _levels(ob.get("yes_dollars") or ob.get("yes"))
+    no_bids = _levels(ob.get("no_dollars") or ob.get("no"))
+    yes_asks = sorted((round(1.0 - p, 4), s) for p, s in no_bids)
+    no_asks = sorted((round(1.0 - p, 4), s) for p, s in yes_bids)
+    return {"yes": yes_asks, "no": no_asks}
+
+
+def get_kalshi_asks(ticker):
+    """Returns (asks_dict, ok)."""
     data = get_json(f"{KALSHI_BASE}/markets/{ticker}/orderbook")
-    if not data:
-        return {"yes": [], "no": []}
-    ob = data.get("orderbook", data.get("orderbook_fp", {}))
-    yes = [(float(p), float(s)) for p, s in ob.get("yes", ob.get("yes_dollars", []))]
-    no  = [(float(p), float(s)) for p, s in ob.get("no", ob.get("no_dollars", []))]
-    return {"yes": yes, "no": no}
+    if data is None:
+        return {"yes": [], "no": []}, False
+    ob = data.get("orderbook_fp") or data.get("orderbook") or {}
+    return kalshi_asks_from_book(ob), True
 
 
 def size_at_or_better(asks, max_price):
     return sum(size for price, size in asks if price <= max_price)
 
 
-def snapshot_market(poly_slug, kalshi_ticker, target_shares=100, max_combined_cost=0.80):
+def _walk(asks, target_shares, max_combined_cost):
+    asks = sorted(asks)  # cheapest first, always
+    formatted = [{"price": p, "size": s} for p, s in asks]
+    return calculate_vwap_fill(formatted, target_shares=target_shares, max_combined_cost=max_combined_cost)
+
+
+def _num(v):
+    return v if isinstance(v, (int, float)) else None
+
+
+def parse_close_time(ticker):
+    """KXBTC15M-26SEP201530-30 -> close 2026-09-20 15:30 America/New_York."""
+    m = re.search(r"-(\d{2})([A-Z]{3})(\d{2})(\d{4})-", ticker or "")
+    if not m:
+        return None
+    yy, mon, dd, hhmm = m.groups()
+    try:
+        dt = datetime.strptime(f"{yy}{mon}{dd}{hhmm}", "%y%b%d%H%M")
+    except ValueError:
+        return None
+    return dt.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(timezone.utc)
+
+
+def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_combined_cost=0.80):
     result = {
-        "poly_up_best_ask": None,
-        "poly_up_size_055": None,
-        "poly_up_vwap": None,
-        "poly_up_unfilled": target_shares,
-        "poly_down_best_ask": None,
-        "poly_down_size_055": None,
-        "poly_down_vwap": None,
-        "poly_down_unfilled": target_shares,
-        "kalshi_yes_vwap": None,
-        "kalshi_yes_unfilled": target_shares,
-        "kalshi_no_vwap": None,
-        "kalshi_no_unfilled": target_shares,
-        "execution_status": "SKIPPED_INSUFFICIENT_DEPTH",
-        "combined_vwap": None
+        "poly_up_best_ask": None, "poly_up_size_055": None, "poly_up_vwap": None, "poly_up_unfilled": None,
+        "poly_down_best_ask": None, "poly_down_size_055": None, "poly_down_vwap": None, "poly_down_unfilled": None,
+        "kalshi_yes_vwap": None, "kalshi_yes_unfilled": None,
+        "kalshi_no_vwap": None, "kalshi_no_unfilled": None,
+        "poly_leg": None, "kalshi_leg": None,
+        "poly_leg_vwap": None, "kalshi_leg_vwap": None,
+        "execution_status": "ERROR_BOOK_UNAVAILABLE",
+        "combined_vwap": None,
     }
 
-    # --- 1. Polymarket Order Book Walk ---
+    # Direction A = Poly Up + Kalshi No ; Direction B = Poly Down + Kalshi Yes
+    poly_prefix, kalshi_side = ("poly_up", "no") if str(direction).strip().upper() == "A" else ("poly_down", "yes")
+    result["poly_leg"], result["kalshi_leg"] = poly_prefix, kalshi_side
+
+    # --- 1. Polymarket ---
     tokens, outcomes = get_poly_tokens(poly_slug)
-    poly_asks_by_side = {}
-    if tokens and outcomes:
+    poly_ok = bool(tokens and outcomes)
+    poly_res = {}
+    if poly_ok:
         for i, tid in enumerate(tokens):
-            side = outcomes[i]
-            book = get_poly_book(tid)
-            asks = book["asks"]
-            
-            formatted_asks = [{"price": p, "size": s} for p, s in asks]
-            vwap_res = calculate_vwap_fill(formatted_asks, target_shares=target_shares, max_combined_cost=max_combined_cost)
-            
-            prefix = "poly_up" if side == "Up" else "poly_down"
-            result[f"{prefix}_best_ask"] = min([p for p, s in asks], default=None)
+            side = str(outcomes[i]).strip().lower()
+            prefix = "poly_up" if side in ("up", "yes") else "poly_down"
+            book, ok = get_poly_book(tid)
+            poly_ok = poly_ok and ok
+            asks = sorted(book["asks"])
+            res = _walk(asks, target_shares, max_combined_cost)
+            result[f"{prefix}_best_ask"] = asks[0][0] if asks else None
             result[f"{prefix}_size_055"] = round(size_at_or_better(asks, 0.55), 1)
-            result[f"{prefix}_vwap"] = vwap_res["vwap_price"]
-            result[f"{prefix}_unfilled"] = vwap_res["unfilled_shares"]
-            
-            poly_asks_by_side[prefix] = vwap_res
+            result[f"{prefix}_vwap"] = _num(res.get("vwap_price")) if res.get("unfilled_shares", 1) == 0 else None
+            result[f"{prefix}_unfilled"] = res.get("unfilled_shares")
+            poly_res[prefix] = res
 
-    # --- 2. Kalshi Order Book Walk ---
-    kalshi_ob = get_kalshi_orderbook(kalshi_ticker)
-    kalshi_results = {}
-    for side in ["yes", "no"]:
-        asks = kalshi_ob.get(side, [])
-        formatted_asks = [{"price": p, "size": s} for p, s in asks]
-        vwap_res = calculate_vwap_fill(formatted_asks, target_shares=target_shares, max_combined_cost=max_combined_cost)
-        
-        result[f"kalshi_{side}_vwap"] = vwap_res["vwap_price"]
-        result[f"kalshi_{side}_unfilled"] = vwap_res["unfilled_shares"]
-        kalshi_results[side] = vwap_res
+    # --- 2. Kalshi ---
+    kalshi_asks, kalshi_ok = get_kalshi_asks(kalshi_ticker)
+    kalshi_res = {}
+    for side in ("yes", "no"):
+        res = _walk(kalshi_asks[side], target_shares, max_combined_cost)
+        result[f"kalshi_{side}_vwap"] = _num(res.get("vwap_price")) if res.get("unfilled_shares", 1) == 0 else None
+        result[f"kalshi_{side}_unfilled"] = res.get("unfilled_shares")
+        kalshi_res[side] = res
 
-    # --- 3. Combined Execution Validation ---
-    p_res = poly_asks_by_side.get("poly_up", {"status": "SKIPPED_INSUFFICIENT_DEPTH", "vwap_price": 0})
-    k_res = kalshi_results.get("yes", {"status": "SKIPPED_INSUFFICIENT_DEPTH", "vwap_price": 0})
-    
+    if not (poly_ok and kalshi_ok):
+        return result   # status stays ERROR_BOOK_UNAVAILABLE
+
+    # --- 3. Combined validation on the ACTUAL legs of this trade ---
+    p_res = poly_res.get(poly_prefix)
+    k_res = kalshi_res.get(kalshi_side)
+    p_full = bool(p_res) and p_res.get("unfilled_shares", 1) == 0
+    k_full = bool(k_res) and k_res.get("unfilled_shares", 1) == 0
+
+    if not (p_full and k_full):
+        result["execution_status"] = "SKIPPED_INSUFFICIENT_DEPTH"
+        return result
+
+    result["poly_leg_vwap"] = p_res["vwap_price"]
+    result["kalshi_leg_vwap"] = k_res["vwap_price"]
     combined = p_res["vwap_price"] + k_res["vwap_price"]
     result["combined_vwap"] = round(combined, 4)
-
-    if p_res["status"] != "FILLED" or k_res["status"] != "FILLED":
-        result["execution_status"] = "SKIPPED_INSUFFICIENT_DEPTH"
-    elif combined > max_combined_cost:
-        result["execution_status"] = "SKIPPED_COST_EXCEEDED"
-    else:
-        result["execution_status"] = "FILLED"
-
+    result["execution_status"] = "SKIPPED_COST_EXCEEDED" if combined > max_combined_cost else "FILLED"
     return result
 
 
@@ -183,29 +234,42 @@ def process_open_positions():
     for _, row in open_df.iterrows():
         key = f"{row['kalshi_ticker']}_{row['direction']}_{row['logged_at']}"
         current_keys.add(key)
+        if key in last_seen:
+            continue
 
-        if key not in last_seen:
-            print(f"New OPEN: {row['asset']} | {row['kalshi_ticker']} | {row['direction']}")
-            depth = snapshot_market(row["poly_slug"], row["kalshi_ticker"])
+        print(f"New OPEN: {row['asset']} | {row['kalshi_ticker']} | {row['direction']}")
+        now = datetime.now(timezone.utc)
+        logged = pd.to_datetime(row["logged_at"], utc=True, errors="coerce")
+        age_sec = (now - logged).total_seconds() if pd.notna(logged) else None
+        close_dt = parse_close_time(row["kalshi_ticker"])
 
-            record = {
-                "snapshot_time": datetime.now(timezone.utc).isoformat(),
-                "type": "OPEN",
-                "asset": row["asset"],
-                "kalshi_ticker": row["kalshi_ticker"],
-                "poly_slug": row["poly_slug"],
-                "direction": row["direction"],
-                "combined_cost": row["combined_cost"],
-                "logged_at": row["logged_at"],
-                **depth
-            }
-            new_rows.append(record)
+        depth = snapshot_market(row["poly_slug"], row["kalshi_ticker"], row["direction"])
+        stale = (age_sec is None) or (age_sec > MAX_SNAPSHOT_AGE_SEC) or (close_dt is not None and now >= close_dt)
+        if stale:
+            depth["execution_status"] = "STALE_SNAPSHOT"
+
+        minutes_into_window = None
+        if close_dt is not None and pd.notna(logged):
+            minutes_into_window = round(15 - (close_dt - logged.to_pydatetime()).total_seconds() / 60, 2)
+
+        new_rows.append({
+            "snapshot_time": now.isoformat(),
+            "type": "OPEN",
+            "asset": row["asset"],
+            "kalshi_ticker": row["kalshi_ticker"],
+            "poly_slug": row["poly_slug"],
+            "direction": row["direction"],
+            "combined_cost": row["combined_cost"],
+            "logged_at": row["logged_at"],
+            "snapshot_age_sec": None if age_sec is None else round(age_sec, 1),
+            "minutes_into_window": minutes_into_window,
+            **depth,
+        })
 
     if new_rows:
         df = pd.DataFrame(new_rows)
         if Path(SNAPSHOT_FILE).exists():
-            old = pd.read_csv(SNAPSHOT_FILE)
-            df = pd.concat([old, df], ignore_index=True)
+            df = pd.concat([pd.read_csv(SNAPSHOT_FILE), df], ignore_index=True)
         df.to_csv(SNAPSHOT_FILE, index=False)
         print(f"Saved {len(new_rows)} OPEN snapshots")
 
@@ -214,6 +278,7 @@ def process_open_positions():
 
 
 def process_closed_positions():
+    """Records outcomes only. No order-book snapshot: books are expired at close."""
     print("\n--- Checking CLOSED positions ---")
     try:
         closed_df = pd.read_csv(CLOSED_POSITIONS_URL)
@@ -232,32 +297,28 @@ def process_closed_positions():
     for _, row in closed_df.iterrows():
         key = f"{row.get('kalshi_ticker','')}_{row.get('direction','')}_{row.get('logged_at', row.get('close_time',''))}"
         current_keys.add(key)
-
-        if key not in last_seen:
-            print(f"New CLOSED: {row.get('asset')} | {row.get('kalshi_ticker')}")
-            depth = snapshot_market(row.get("poly_slug", ""), row.get("kalshi_ticker", ""))
-
-            record = {
-                "snapshot_time": datetime.now(timezone.utc).isoformat(),
-                "type": "CLOSED",
-                "asset": row.get("asset"),
-                "kalshi_ticker": row.get("kalshi_ticker"),
-                "poly_slug": row.get("poly_slug"),
-                "direction": row.get("direction"),
-                "combined_cost": row.get("combined_cost"),
-                "profit": row.get("profit"),
-                "payout": row.get("payout"),
-                "kalshi_outcome": row.get("kalshi_outcome"),
-                "polymarket_outcome": row.get("polymarket_outcome"),
-                **depth
-            }
-            new_rows.append(record)
+        if key in last_seen:
+            continue
+        print(f"New CLOSED: {row.get('asset')} | {row.get('kalshi_ticker')}")
+        new_rows.append({
+            "snapshot_time": datetime.now(timezone.utc).isoformat(),
+            "type": "CLOSED",
+            "asset": row.get("asset"),
+            "kalshi_ticker": row.get("kalshi_ticker"),
+            "poly_slug": row.get("poly_slug"),
+            "direction": row.get("direction"),
+            "combined_cost": row.get("combined_cost"),
+            "logged_at": row.get("logged_at"),
+            "profit": row.get("profit"),
+            "payout": row.get("payout"),
+            "kalshi_outcome": row.get("kalshi_outcome"),
+            "polymarket_outcome": row.get("polymarket_outcome"),
+        })
 
     if new_rows:
         df = pd.DataFrame(new_rows)
         if Path(CLOSED_SNAPSHOT_FILE).exists():
-            old = pd.read_csv(CLOSED_SNAPSHOT_FILE)
-            df = pd.concat([old, df], ignore_index=True)
+            df = pd.concat([pd.read_csv(CLOSED_SNAPSHOT_FILE), df], ignore_index=True)
         df.to_csv(CLOSED_SNAPSHOT_FILE, index=False)
         print(f"Saved {len(new_rows)} CLOSED snapshots")
 
@@ -274,80 +335,60 @@ def generate_daily_report():
 
     open_snaps = pd.read_csv(SNAPSHOT_FILE) if Path(SNAPSHOT_FILE).exists() else pd.DataFrame()
     closed_snaps = pd.read_csv(CLOSED_SNAPSHOT_FILE) if Path(CLOSED_SNAPSHOT_FILE).exists() else pd.DataFrame()
-
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
 
-    if not open_snaps.empty and "snapshot_time" in open_snaps.columns:
-        open_today = open_snaps[open_snaps["snapshot_time"] >= cutoff]
-    else:
-        open_today = pd.DataFrame()
-
-    if not closed_snaps.empty and "snapshot_time" in closed_snaps.columns:
-        closed_today = closed_snaps[closed_snaps["snapshot_time"] >= cutoff]
-    else:
-        closed_today = pd.DataFrame()
+    open_today = open_snaps[open_snaps["snapshot_time"] >= cutoff] if (not open_snaps.empty and "snapshot_time" in open_snaps.columns) else pd.DataFrame()
+    closed_today = closed_snaps[closed_snaps["snapshot_time"] >= cutoff] if (not closed_snaps.empty and "snapshot_time" in closed_snaps.columns) else pd.DataFrame()
 
     lines.append("## Summary (Last 24 hours)\n")
     lines.append(f"- New OPEN snapshots: **{len(open_today)}**")
-    lines.append(f"- New CLOSED snapshots: **{len(closed_today)}**\n")
+    lines.append(f"- New CLOSED trades: **{len(closed_today)}**")
+    if not open_today.empty and "execution_status" in open_today.columns:
+        counts = open_today["execution_status"].fillna("LEGACY_NO_STATUS").value_counts().to_dict()
+        lines.append("- Snapshot statuses: " + ", ".join(f"{k}: {v}" for k, v in counts.items()))
+    lines.append("")
 
     if not closed_today.empty and "profit" in closed_today.columns:
-        total_profit = closed_today["profit"].sum()
-        win_rate = (closed_today["profit"] > 0).mean() * 100
-        avg_cost = closed_today["combined_cost"].mean()
-        lines.append(f"- Total simulated profit: **${total_profit:.2f}**")
-        lines.append(f"- Win rate: **{win_rate:.1f}%**")
-        lines.append(f"- Average entry cost: **${avg_cost:.3f}**\n")
+        lines.append(f"- Total simulated profit: **${closed_today['profit'].sum():.2f}**")
+        lines.append(f"- Win rate: **{(closed_today['profit'] > 0).mean() * 100:.1f}%**")
+        lines.append(f"- Average entry cost: **${closed_today['combined_cost'].mean():.3f}**\n")
 
-    lines.append("## Depth Available When Entries Happened\n")
+    lines.append("## Depth at Entry (valid snapshots only, target 100 contracts per leg)\n")
+    valid = open_today[open_today["execution_status"].isin(VALID_STATUSES)] if (not open_today.empty and "execution_status" in open_today.columns) else pd.DataFrame()
 
-    if not open_today.empty:
-        lines.append("### On OPEN\n")
-        lines.append("| Asset | Up ≤0.55 | Poly VWAP | Kalshi VWAP | Combined VWAP | Status |")
-        lines.append("|-------|----------|-----------|-------------|---------------|--------|")
-
-        for asset in sorted(open_today["asset"].dropna().unique()):
-            subset = open_today[open_today["asset"] == asset]
-            avg_055 = subset["poly_up_size_055"].mean() if "poly_up_size_055" in subset.columns else 0
-            p_vwap = subset["poly_up_vwap"].mean() if "poly_up_vwap" in subset.columns else 0
-            k_vwap = subset["kalshi_yes_vwap"].mean() if "kalshi_yes_vwap" in subset.columns else 0
-            c_vwap = subset["combined_vwap"].mean() if "combined_vwap" in subset.columns else 0
-            
-            # Safe status mode resolution to avoid KeyError
-            status_mode = "-"
-            if "execution_status" in subset.columns and not subset["execution_status"].dropna().empty:
-                modes = subset["execution_status"].mode()
-                if not modes.empty:
-                    status_mode = modes.iloc[0]
-
-            lines.append(f"| {asset} | {avg_055:.0f} | ${p_vwap:.3f} | ${k_vwap:.3f} | ${c_vwap:.3f} | {status_mode} |")
-        lines.append("")
+    if valid.empty:
+        lines.append("_No valid (fresh, non-error) open snapshots in the last 24 hours._\n")
     else:
-        lines.append("_No open snapshots in the last 24 hours._\n")
+        lines.append("| Asset | N | Filled | Skipped depth | Avg mins into window | Poly leg VWAP | Kalshi leg VWAP | Combined VWAP | Logged cost |")
+        lines.append("|-------|---|--------|---------------|----------------------|---------------|-----------------|---------------|-------------|")
+        for asset in sorted(valid["asset"].dropna().unique()):
+            s = valid[valid["asset"] == asset]
+            full = s[s["combined_vwap"].notna()]
+            fmt = lambda col, d=3: (f"{full[col].mean():.{d}f}" if (not full.empty and col in full.columns and full[col].notna().any()) else "n/a")
+            mins = f"{s['minutes_into_window'].mean():.1f}" if "minutes_into_window" in s.columns and s["minutes_into_window"].notna().any() else "n/a"
+            lines.append(
+                f"| {asset} | {len(s)} | {(s['execution_status'] == 'FILLED').sum()} | "
+                f"{(s['execution_status'] == 'SKIPPED_INSUFFICIENT_DEPTH').sum()} | {mins} | "
+                f"{fmt('poly_leg_vwap')} | {fmt('kalshi_leg_vwap')} | {fmt('combined_vwap')} | {fmt('combined_cost')} |"
+            )
+        lines.append("")
 
     if not closed_today.empty:
-        lines.append("### On CLOSE\n")
-        lines.append("| Asset | Count | Avg Profit | Up ≤0.55 | Down ≤0.55 |")
-        lines.append("|-------|-------|------------|----------|------------|")
-
+        lines.append("## Closed trades\n")
+        lines.append("| Asset | Count | Win rate | Avg Profit | Total Profit |")
+        lines.append("|-------|-------|----------|------------|--------------|")
         for asset in sorted(closed_today["asset"].dropna().unique()):
-            subset = closed_today[closed_today["asset"] == asset]
-            count = len(subset)
-            avg_profit = subset["profit"].mean() if "profit" in subset.columns else 0
-            avg_up = subset["poly_up_size_055"].mean() if "poly_up_size_055" in subset.columns else 0
-            avg_down = subset["poly_down_size_055"].mean() if "poly_down_size_055" in subset.columns else 0
-            lines.append(f"| {asset} | {count} | ${avg_profit:.3f} | {avg_up:.0f} | {avg_down:.0f} |")
+            s = closed_today[closed_today["asset"] == asset]
+            lines.append(f"| {asset} | {len(s)} | {(s['profit'] > 0).mean() * 100:.0f}% | ${s['profit'].mean():.3f} | ${s['profit'].sum():.2f} |")
         lines.append("")
 
     report = "\n".join(lines)
     with open(DAILY_REPORT_FILE, "w") as f:
         f.write(report)
-
     summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_file:
         with open(summary_file, "a") as f:
             f.write("\n\n" + report)
-
     print("Daily report generated.")
     return report
 
@@ -356,24 +397,20 @@ def write_github_summary(open_snaps, closed_snaps):
     summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
     if not summary_file:
         return
-
-    lines = []
-    lines.append("## Depth Monitor — Latest Run\n")
-    lines.append(f"**Time:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
-
-    lines.append("### New Open Positions\n")
+    lines = ["## Depth Monitor — Latest Run\n",
+             f"**Time:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n",
+             "### New Open Positions\n"]
     if not open_snaps:
         lines.append("_None_\n")
     else:
-        lines.append("| Asset | Ticker | Dir | Combined VWAP | Status |")
-        lines.append("|-------|--------|-----|---------------|--------|")
+        lines.append("| Asset | Ticker | Dir | Poly leg | Kalshi leg | Combined | Mins in | Status |")
+        lines.append("|-------|--------|-----|----------|------------|----------|---------|--------|")
+        f3 = lambda v: "n/a" if v is None or (isinstance(v, float) and v != v) else f"${v:.3f}"
         for s in open_snaps:
-            lines.append(
-                f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
-                f"${s.get('combined_vwap') or '-'} | {s.get('execution_status') or '-'} |"
-            )
+            lines.append(f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
+                         f"{f3(s.get('poly_leg_vwap'))} | {f3(s.get('kalshi_leg_vwap'))} | {f3(s.get('combined_vwap'))} | "
+                         f"{s.get('minutes_into_window')} | {s.get('execution_status')} |")
         lines.append("")
-
     lines.append("### New Closed Trades\n")
     if not closed_snaps:
         lines.append("_None_\n")
@@ -381,25 +418,18 @@ def write_github_summary(open_snaps, closed_snaps):
         lines.append("| Asset | Ticker | Dir | Cost | Profit |")
         lines.append("|-------|--------|-----|------|--------|")
         for s in closed_snaps:
-            lines.append(
-                f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
-                f"${s.get('combined_cost')} | ${s.get('profit')} |"
-            )
+            lines.append(f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | ${s.get('combined_cost')} | ${s.get('profit')} |")
         lines.append("")
-
     with open(summary_file, "a") as f:
         f.write("\n".join(lines))
 
 
 def main():
     print(f"=== Depth Monitor started at {datetime.now(timezone.utc).isoformat()} ===")
-
     open_snaps = process_open_positions()
     closed_snaps = process_closed_positions()
-
     write_github_summary(open_snaps, closed_snaps)
     generate_daily_report()
-
     print("\n=== Depth Monitor finished ===")
 
 
