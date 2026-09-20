@@ -409,8 +409,11 @@ def generate_daily_report():
     valid = open_today[open_today["execution_status"].isin(VALID_STATUSES)] if (not open_today.empty and "execution_status" in open_today.columns) else pd.DataFrame()
     if not valid.empty and "poly_leg" in valid.columns:
         valid = valid[valid["poly_leg"].notna()]   # drop pre-patch rows (wrong legs / no leg VWAPs)
-    if not valid.empty and "max_size_at_cap" in valid.columns:
-        valid = valid[valid["max_size_at_cap"].notna()]
+    if not valid.empty:
+        if "max_size_at_cap" in valid.columns:
+            valid = valid[valid["max_size_at_cap"].notna()]
+        else:
+            valid = valid.iloc[0:0]   # CSV predates the multi-size columns: nothing valid yet
 
     if valid.empty:
         lines.append("_No valid (fresh, non-error) open snapshots in the last 24 hours._\n")
