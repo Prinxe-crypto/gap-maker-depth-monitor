@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 20:40:40 UTC
+Generated at: 2026-09-20 20:42:40 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **80**
+- New OPEN snapshots: **83**
 - New CLOSED trades: **618**
-- Snapshot statuses: LEGACY_NO_STATUS: 64, STALE_SNAPSHOT: 7, SKIPPED_COST_EXCEEDED: 5, SKIPPED_INSUFFICIENT_DEPTH: 4
+- Snapshot statuses: LEGACY_NO_STATUS: 64, SKIPPED_COST_EXCEEDED: 8, STALE_SNAPSHOT: 7, SKIPPED_INSUFFICIENT_DEPTH: 4
 
 - Total simulated profit: **$161.38**
 - Win rate: **87.1%**
@@ -18,7 +18,10 @@ Generated at: 2026-09-20 20:40:40 UTC
 
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
+| BNB | 1 | 0 | 0 | 0 | 12.3 | 0.790 |
+| DOGE | 1 | 0 | 0 | 0 | 12.3 | 0.793 |
 | ETH | 1 | 0 | 0 | 0 | 0.4 | 0.630 |
+| HYPE | 1 | 0 | 0 | 0 | 12.3 | 0.750 |
 | SOL | 1 | 0 | 0 | 0 | 7.3 | 0.760 |
 | ZEC | 1 | 0 | 0 | 0 | 0.4 | 0.470 |
 
@@ -26,7 +29,10 @@ Generated at: 2026-09-20 20:40:40 UTC
 
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
+| BNB | 0.95 (1/1) | 1.03 (1/1) | 1.22 (1/1) | - (0/1) | - (0/1) | - (0/1) |
+| DOGE | 1.02 (1/1) | 1.07 (1/1) | 1.10 (1/1) | 1.14 (1/1) | - (0/1) | - (0/1) |
 | ETH | 1.00 (1/1) | 1.01 (1/1) | 1.03 (1/1) | 1.05 (1/1) | 1.23 (1/1) | - (0/1) |
+| HYPE | 1.04 (1/1) | 1.10 (1/1) | 1.20 (1/1) | 1.47 (1/1) | - (0/1) | - (0/1) |
 | SOL | 0.98 (1/1) | 1.01 (1/1) | 1.05 (1/1) | 1.09 (1/1) | - (0/1) | - (0/1) |
 | ZEC | 1.08 (1/1) | 1.38 (1/1) | 1.55 (1/1) | 1.61 (1/1) | - (0/1) | - (0/1) |
 
