@@ -1,6 +1,6 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 20:48:39 UTC
+Generated at: 2026-09-20 20:50:36 UTC
 
 ## Summary (Last 24 hours)
 
@@ -55,7 +55,7 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 
 | Entry time in window | Trades | Win rate | Avg cost | Avg profit | Total profit |
 |----------------------|--------|----------|----------|------------|--------------|
-| 0-3 min | 152 | 99% | $0.644 | $0.343 | $52.09 |
+| 0-3 min | 153 | 99% | $0.644 | $0.343 | $52.46 |
 | 3-7 min | 100 | 100% | $0.709 | $0.311 | $31.10 |
 | 7-11 min | 92 | 96% | $0.697 | $0.259 | $23.84 |
-| 11-15 min | 273 | 73% | $0.538 | $0.202 | $55.09 |
+| 11-15 min | 274 | 73% | $0.539 | $0.202 | $55.34 |
