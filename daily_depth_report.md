@@ -1,6 +1,6 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 21:20:37 UTC
+Generated at: 2026-09-20 21:22:42 UTC
 
 ## Summary (Last 24 hours)
 
@@ -51,11 +51,4 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 | XRP | 62 | 84% | $0.231 | $14.33 |
 | ZEC | 181 | 98% | $0.347 | $62.72 |
 
-## Closed trades by entry timing (all history)
-
-| Entry time in window | Trades | Win rate | Avg cost | Avg profit | Total profit |
-|----------------------|--------|----------|----------|------------|--------------|
-| 0-3 min | 153 | 99% | $0.644 | $0.343 | $52.46 |
-| 3-7 min | 100 | 100% | $0.709 | $0.311 | $31.10 |
-| 7-11 min | 92 | 96% | $0.697 | $0.259 | $23.84 |
-| 11-15 min | 277 | 73% | $0.540 | $0.200 | $55.39 |
+_Entry-timing table: no rows with usable timestamps._
