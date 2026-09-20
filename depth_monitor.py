@@ -134,6 +134,11 @@ def _walk(asks, target_shares, max_combined_cost):
     return calculate_vwap_fill(formatted, target_shares=target_shares, max_combined_cost=max_combined_cost)
 
 
+def _full(res):
+    """True if the walk filled the whole target (tolerates float dust like 1e-14)."""
+    return bool(res) and res.get("unfilled_shares", 1) < 1e-6
+
+
 def _num(v):
     return v if isinstance(v, (int, float)) else None
 
@@ -181,7 +186,7 @@ def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_
             res = _walk(asks, target_shares, max_combined_cost)
             result[f"{prefix}_best_ask"] = asks[0][0] if asks else None
             result[f"{prefix}_size_055"] = round(size_at_or_better(asks, 0.55), 1)
-            result[f"{prefix}_vwap"] = _num(res.get("vwap_price")) if res.get("unfilled_shares", 1) == 0 else None
+            result[f"{prefix}_vwap"] = _num(res.get("vwap_price")) if _full(res) else None
             result[f"{prefix}_unfilled"] = res.get("unfilled_shares")
             poly_res[prefix] = res
 
@@ -190,7 +195,7 @@ def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_
     kalshi_res = {}
     for side in ("yes", "no"):
         res = _walk(kalshi_asks[side], target_shares, max_combined_cost)
-        result[f"kalshi_{side}_vwap"] = _num(res.get("vwap_price")) if res.get("unfilled_shares", 1) == 0 else None
+        result[f"kalshi_{side}_vwap"] = _num(res.get("vwap_price")) if _full(res) else None
         result[f"kalshi_{side}_unfilled"] = res.get("unfilled_shares")
         kalshi_res[side] = res
 
@@ -200,8 +205,8 @@ def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_
     # --- 3. Combined validation on the ACTUAL legs of this trade ---
     p_res = poly_res.get(poly_prefix)
     k_res = kalshi_res.get(kalshi_side)
-    p_full = bool(p_res) and p_res.get("unfilled_shares", 1) == 0
-    k_full = bool(k_res) and k_res.get("unfilled_shares", 1) == 0
+    p_full = _full(p_res)
+    k_full = _full(k_res)
 
     if not (p_full and k_full):
         result["execution_status"] = "SKIPPED_INSUFFICIENT_DEPTH"
