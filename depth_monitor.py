@@ -360,6 +360,8 @@ def generate_daily_report():
 
     lines.append("## Depth at Entry (valid snapshots only, target 100 contracts per leg)\n")
     valid = open_today[open_today["execution_status"].isin(VALID_STATUSES)] if (not open_today.empty and "execution_status" in open_today.columns) else pd.DataFrame()
+    if not valid.empty and "poly_leg" in valid.columns:
+        valid = valid[valid["poly_leg"].notna()]   # drop pre-patch rows (wrong legs / no leg VWAPs)
 
     if valid.empty:
         lines.append("_No valid (fresh, non-error) open snapshots in the last 24 hours._\n")
