@@ -1,10 +1,10 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 14:08:32 UTC
+Generated at: 2026-09-20 14:10:42 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **19**
+- New OPEN snapshots: **20**
 - New CLOSED snapshots: **544**
 
 - Total simulated profit: **$146.62**
@@ -21,7 +21,7 @@ Generated at: 2026-09-20 14:08:32 UTC
 | BTC | 7727 | 2473 | 0.3953 | 0.4035 |
 | DOGE | 0 | 564 | 0.8772 | 0.8878 |
 | ETH | 0 | 671 | 0.8333 | 0.8665 |
-| HYPE | 0 | 210 | 0.8842 | 0.9473 |
+| HYPE | 0 | 286 | 0.83165 | 0.8632 |
 | SOL | 0 | 448 | 0.7199 | 0.783 |
 | XRP | 0 | 496 | 0.7368 | 0.7936 |
 | ZEC | 10 | 10 | 0.9438666666666666 | 0.9438666666666666 |
