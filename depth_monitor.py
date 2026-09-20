@@ -177,4 +177,214 @@ def process_open_positions():
             depth = snapshot_market(row["poly_slug"], row["kalshi_ticker"])
 
             record = {
-                "snapshot_time": datetime.
+                "snapshot_time": datetime.now(timezone.utc).isoformat(),
+                "type": "OPEN",
+                "asset": row["asset"],
+                "kalshi_ticker": row["kalshi_ticker"],
+                "poly_slug": row["poly_slug"],
+                "direction": row["direction"],
+                "combined_cost": row["combined_cost"],
+                "logged_at": row["logged_at"],
+                **depth
+            }
+            new_rows.append(record)
+
+    if new_rows:
+        df = pd.DataFrame(new_rows)
+        if Path(SNAPSHOT_FILE).exists():
+            old = pd.read_csv(SNAPSHOT_FILE)
+            df = pd.concat([old, df], ignore_index=True)
+        df.to_csv(SNAPSHOT_FILE, index=False)
+        print(f"Saved {len(new_rows)} OPEN snapshots")
+
+    save_json_set(LAST_SEEN_OPEN_FILE, current_keys)
+    return new_rows
+
+
+def process_closed_positions():
+    print("\n--- Checking CLOSED positions ---")
+    try:
+        closed_df = pd.read_csv(CLOSED_POSITIONS_URL)
+    except Exception as e:
+        print(f"Could not load closed_positions: {e}")
+        return []
+
+    if closed_df.empty:
+        print("No closed positions.")
+        return []
+
+    last_seen = load_json_set(LAST_SEEN_CLOSED_FILE)
+    current_keys = set()
+    new_rows = []
+
+    for _, row in closed_df.iterrows():
+        key = f"{row.get('kalshi_ticker','')}_{row.get('direction','')}_{row.get('logged_at', row.get('close_time',''))}"
+        current_keys.add(key)
+
+        if key not in last_seen:
+            print(f"New CLOSED: {row.get('asset')} | {row.get('kalshi_ticker')}")
+            depth = snapshot_market(row.get("poly_slug", ""), row.get("kalshi_ticker", ""))
+
+            record = {
+                "snapshot_time": datetime.now(timezone.utc).isoformat(),
+                "type": "CLOSED",
+                "asset": row.get("asset"),
+                "kalshi_ticker": row.get("kalshi_ticker"),
+                "poly_slug": row.get("poly_slug"),
+                "direction": row.get("direction"),
+                "combined_cost": row.get("combined_cost"),
+                "profit": row.get("profit"),
+                "payout": row.get("payout"),
+                "kalshi_outcome": row.get("kalshi_outcome"),
+                "polymarket_outcome": row.get("polymarket_outcome"),
+                **depth
+            }
+            new_rows.append(record)
+
+    if new_rows:
+        df = pd.DataFrame(new_rows)
+        if Path(CLOSED_SNAPSHOT_FILE).exists():
+            old = pd.read_csv(CLOSED_SNAPSHOT_FILE)
+            df = pd.concat([old, df], ignore_index=True)
+        df.to_csv(CLOSED_SNAPSHOT_FILE, index=False)
+        print(f"Saved {len(new_rows)} CLOSED snapshots")
+
+    save_json_set(LAST_SEEN_CLOSED_FILE, current_keys)
+    return new_rows
+
+
+def generate_daily_report():
+    print("\n--- Generating Daily Report ---")
+    lines = []
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    lines.append(f"# Daily Depth & Performance Report — {today}\n")
+    lines.append(f"Generated at: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+
+    open_snaps = pd.read_csv(SNAPSHOT_FILE) if Path(SNAPSHOT_FILE).exists() else pd.DataFrame()
+    closed_snaps = pd.read_csv(CLOSED_SNAPSHOT_FILE) if Path(CLOSED_SNAPSHOT_FILE).exists() else pd.DataFrame()
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+    if not open_snaps.empty and "snapshot_time" in open_snaps.columns:
+        open_today = open_snaps[open_snaps["snapshot_time"] >= cutoff]
+    else:
+        open_today = pd.DataFrame()
+
+    if not closed_snaps.empty and "snapshot_time" in closed_snaps.columns:
+        closed_today = closed_snaps[closed_snaps["snapshot_time"] >= cutoff]
+    else:
+        closed_today = pd.DataFrame()
+
+    lines.append("## Summary (Last 24 hours)\n")
+    lines.append(f"- New OPEN snapshots: **{len(open_today)}**")
+    lines.append(f"- New CLOSED snapshots: **{len(closed_today)}**\n")
+
+    if not closed_today.empty and "profit" in closed_today.columns:
+        total_profit = closed_today["profit"].sum()
+        win_rate = (closed_today["profit"] > 0).mean() * 100
+        avg_cost = closed_today["combined_cost"].mean()
+        lines.append(f"- Total simulated profit: **${total_profit:.2f}**")
+        lines.append(f"- Win rate: **{win_rate:.1f}%**")
+        lines.append(f"- Average entry cost: **${avg_cost:.3f}**\n")
+
+    lines.append("## Depth Available When Entries Happened\n")
+
+    if not open_today.empty:
+        lines.append("### On OPEN\n")
+        lines.append("| Asset | Avg Size ≤0.55 (Up) | Avg Size ≤0.55 (Down) | Avg Slip $1k (Up) | Avg Slip $3k (Up) |")
+        lines.append("|-------|---------------------|-----------------------|-------------------|-------------------|")
+
+        for asset in sorted(open_today["asset"].dropna().unique()):
+            subset = open_today[open_today["asset"] == asset]
+            avg_up = subset["poly_up_size_055"].mean()
+            avg_down = subset["poly_down_size_055"].mean()
+            slip1k = subset["poly_up_slip_1000"].mean()
+            slip3k = subset["poly_up_slip_3000"].mean()
+            lines.append(f"| {asset} | {avg_up:.0f} | {avg_down:.0f} | {slip1k or '-'} | {slip3k or '-'} |")
+        lines.append("")
+    else:
+        lines.append("_No open snapshots in the last 24 hours._\n")
+
+    if not closed_today.empty:
+        lines.append("### On CLOSE\n")
+        lines.append("| Asset | Count | Avg Profit | Avg Size ≤0.55 (Up) | Avg Size ≤0.55 (Down) |")
+        lines.append("|-------|-------|------------|---------------------|-----------------------|")
+
+        for asset in sorted(closed_today["asset"].dropna().unique()):
+            subset = closed_today[closed_today["asset"] == asset]
+            count = len(subset)
+            avg_profit = subset["profit"].mean() if "profit" in subset.columns else 0
+            avg_up = subset["poly_up_size_055"].mean()
+            avg_down = subset["poly_down_size_055"].mean()
+            lines.append(f"| {asset} | {count} | ${avg_profit:.3f} | {avg_up:.0f} | {avg_down:.0f} |")
+        lines.append("")
+
+    report = "\n".join(lines)
+    with open(DAILY_REPORT_FILE, "w") as f:
+        f.write(report)
+
+    summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_file:
+        with open(summary_file, "a") as f:
+            f.write("\n\n" + report)
+
+    print("Daily report generated.")
+    return report
+
+
+def write_github_summary(open_snaps, closed_snaps):
+    summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not summary_file:
+        return
+
+    lines = []
+    lines.append("## Depth Monitor — Latest Run\n")
+    lines.append(f"**Time:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+
+    lines.append("### New Open Positions\n")
+    if not open_snaps:
+        lines.append("_None_\n")
+    else:
+        lines.append("| Asset | Ticker | Dir | Cost | Up ≤0.55 | Down ≤0.55 | Slip $1k | Slip $3k |")
+        lines.append("|-------|--------|-----|------|----------|------------|----------|----------|")
+        for s in open_snaps:
+            lines.append(
+                f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
+                f"${s.get('combined_cost')} | {s.get('poly_up_size_055') or '-'} | "
+                f"{s.get('poly_down_size_055') or '-'} | {s.get('poly_up_slip_1000') or '-'} | "
+                f"{s.get('poly_up_slip_3000') or '-'} |"
+            )
+        lines.append("")
+
+    lines.append("### New Closed Trades\n")
+    if not closed_snaps:
+        lines.append("_None_\n")
+    else:
+        lines.append("| Asset | Ticker | Dir | Cost | Profit | Up ≤0.55 | Down ≤0.55 |")
+        lines.append("|-------|--------|-----|------|--------|----------|------------|")
+        for s in closed_snaps:
+            lines.append(
+                f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
+                f"${s.get('combined_cost')} | ${s.get('profit')} | "
+                f"{s.get('poly_up_size_055') or '-'} | {s.get('poly_down_size_055') or '-'} |"
+            )
+        lines.append("")
+
+    with open(summary_file, "a") as f:
+        f.write("\n".join(lines))
+
+
+def main():
+    print(f"=== Depth Monitor started at {datetime.now(timezone.utc).isoformat()} ===")
+
+    open_snaps = process_open_positions()
+    closed_snaps = process_closed_positions()
+
+    write_github_summary(open_snaps, closed_snaps)
+    generate_daily_report()
+
+    print("\n=== Depth Monitor finished ===")
+
+
+if __name__ == "__main__":
+    main()
