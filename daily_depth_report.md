@@ -1,14 +1,14 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 19:46:38 UTC
+Generated at: 2026-09-20 19:48:40 UTC
 
 ## Summary (Last 24 hours)
 
 - New OPEN snapshots: **69**
-- New CLOSED trades: **604**
+- New CLOSED trades: **605**
 - Snapshot statuses: LEGACY_NO_STATUS: 64, SKIPPED_INSUFFICIENT_DEPTH: 4, SKIPPED_COST_EXCEEDED: 1
 
-- Total simulated profit: **$158.53**
+- Total simulated profit: **$158.97**
 - Win rate: **87.3%**
 - Average entry cost: **$0.617**
 
@@ -30,6 +30,6 @@ Generated at: 2026-09-20 19:46:38 UTC
 | DOGE | 62 | 85% | $0.258 | $16.02 |
 | ETH | 65 | 77% | $0.174 | $11.31 |
 | HYPE | 60 | 83% | $0.255 | $15.28 |
-| SOL | 71 | 80% | $0.192 | $13.62 |
+| SOL | 72 | 81% | $0.195 | $14.07 |
 | XRP | 60 | 87% | $0.256 | $15.37 |
 | ZEC | 175 | 98% | $0.345 | $60.41 |
