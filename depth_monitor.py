@@ -1,10 +1,12 @@
+from fill_model import calculate_vwap_fill
+
 """
 Gap-Maker Depth & Liquidity Monitor + Daily Report
 --------------------------------------------------
 Companion for Prinxe-crypto/Gap-maker
 
 - Snapshots full order books on new OPEN and CLOSED positions
-- Calculates depth & estimated slippage
+- Calculates depth & estimated VWAP fill for target share sizes
 - Writes clean GitHub summary tables
 - Generates a Daily Performance + Depth Report
 """
@@ -31,8 +33,6 @@ DAILY_REPORT_FILE = "daily_depth_report.md"
 KALSHI_BASE = "https://external-api.kalshi.com/trade-api/v2"
 CLOB_BASE = "https://clob.polymarket.com"
 GAMMA_BASE = "https://gamma-api.polymarket.com"
-
-TEST_SIZES = [500, 1000, 2000, 3000, 5000]
 
 SESSION = requests.Session()
 SESSION.headers.update({"Accept": "application/json", "User-Agent": "depth-monitor/1.2"})
@@ -97,57 +97,69 @@ def size_at_or_better(asks, max_price):
     return sum(size for price, size in asks if price <= max_price)
 
 
-def estimate_slippage(asks, target_size):
-    if not asks:
-        return None, 0.0
-    sorted_asks = sorted(asks, key=lambda x: x[0])
-    remaining = float(target_size)
-    cost = 0.0
-    filled = 0.0
-    for price, size in sorted_asks:
-        take = min(remaining, size)
-        cost += take * price
-        filled += take
-        remaining -= take
-        if remaining <= 0:
-            break
-    if filled == 0:
-        return None, 0.0
-    return round(cost / filled, 4), round(filled, 2)
-
-
-def snapshot_market(poly_slug, kalshi_ticker):
+def snapshot_market(poly_slug, kalshi_ticker, target_shares=100, max_combined_cost=0.80):
     result = {
         "poly_up_best_ask": None,
         "poly_up_size_055": None,
-        "poly_up_slip_1000": None,
-        "poly_up_slip_3000": None,
+        "poly_up_vwap": None,
+        "poly_up_unfilled": target_shares,
         "poly_down_best_ask": None,
         "poly_down_size_055": None,
-        "poly_down_slip_1000": None,
-        "poly_down_slip_3000": None,
-        "kalshi_yes_levels": 0,
-        "kalshi_no_levels": 0,
+        "poly_down_vwap": None,
+        "poly_down_unfilled": target_shares,
+        "kalshi_yes_vwap": None,
+        "kalshi_yes_unfilled": target_shares,
+        "kalshi_no_vwap": None,
+        "kalshi_no_unfilled": target_shares,
+        "execution_status": "SKIPPED_INSUFFICIENT_DEPTH",
+        "combined_vwap": None
     }
 
+    # --- 1. Polymarket Order Book Walk ---
     tokens, outcomes = get_poly_tokens(poly_slug)
+    poly_asks_by_side = {}
     if tokens and outcomes:
         for i, tid in enumerate(tokens):
             side = outcomes[i]
             book = get_poly_book(tid)
             asks = book["asks"]
+            
+            formatted_asks = [{"price": p, "size": s} for p, s in asks]
+            vwap_res = calculate_vwap_fill(formatted_asks, target_shares=target_shares, max_combined_cost=max_combined_cost)
+            
             prefix = "poly_up" if side == "Up" else "poly_down"
-
             result[f"{prefix}_best_ask"] = min([p for p, s in asks], default=None)
             result[f"{prefix}_size_055"] = round(size_at_or_better(asks, 0.55), 1)
-            avg1k, _ = estimate_slippage(asks, 1000)
-            avg3k, _ = estimate_slippage(asks, 3000)
-            result[f"{prefix}_slip_1000"] = avg1k
-            result[f"{prefix}_slip_3000"] = avg3k
+            result[f"{prefix}_vwap"] = vwap_res["vwap_price"]
+            result[f"{prefix}_unfilled"] = vwap_res["unfilled_shares"]
+            
+            poly_asks_by_side[prefix] = vwap_res
 
+    # --- 2. Kalshi Order Book Walk ---
     kalshi_ob = get_kalshi_orderbook(kalshi_ticker)
-    result["kalshi_yes_levels"] = len(kalshi_ob.get("yes", []))
-    result["kalshi_no_levels"] = len(kalshi_ob.get("no", []))
+    kalshi_results = {}
+    for side in ["yes", "no"]:
+        asks = kalshi_ob.get(side, [])
+        formatted_asks = [{"price": p, "size": s} for p, s in asks]
+        vwap_res = calculate_vwap_fill(formatted_asks, target_shares=target_shares, max_combined_cost=max_combined_cost)
+        
+        result[f"kalshi_{side}_vwap"] = vwap_res["vwap_price"]
+        result[f"kalshi_{side}_unfilled"] = vwap_res["unfilled_shares"]
+        kalshi_results[side] = vwap_res
+
+    # --- 3. Combined Execution Validation ---
+    p_res = poly_asks_by_side.get("poly_up", {"status": "SKIPPED_INSUFFICIENT_DEPTH", "vwap_price": 0})
+    k_res = kalshi_results.get("yes", {"status": "SKIPPED_INSUFFICIENT_DEPTH", "vwap_price": 0})
+    
+    combined = p_res["vwap_price"] + k_res["vwap_price"]
+    result["combined_vwap"] = round(combined, 4)
+
+    if p_res["status"] != "FILLED" or k_res["status"] != "FILLED":
+        result["execution_status"] = "SKIPPED_INSUFFICIENT_DEPTH"
+    elif combined > max_combined_cost:
+        result["execution_status"] = "SKIPPED_COST_EXCEEDED"
+    else:
+        result["execution_status"] = "FILLED"
 
     return result
 
@@ -291,31 +303,32 @@ def generate_daily_report():
 
     if not open_today.empty:
         lines.append("### On OPEN\n")
-        lines.append("| Asset | Avg Size ≤0.55 (Up) | Avg Size ≤0.55 (Down) | Avg Slip $1k (Up) | Avg Slip $3k (Up) |")
-        lines.append("|-------|---------------------|-----------------------|-------------------|-------------------|")
+        lines.append("| Asset | Up ≤0.55 | Poly VWAP | Kalshi VWAP | Combined VWAP | Status |")
+        lines.append("|-------|----------|-----------|-------------|---------------|--------|")
 
         for asset in sorted(open_today["asset"].dropna().unique()):
             subset = open_today[open_today["asset"] == asset]
-            avg_up = subset["poly_up_size_055"].mean()
-            avg_down = subset["poly_down_size_055"].mean()
-            slip1k = subset["poly_up_slip_1000"].mean()
-            slip3k = subset["poly_up_slip_3000"].mean()
-            lines.append(f"| {asset} | {avg_up:.0f} | {avg_down:.0f} | {slip1k or '-'} | {slip3k or '-'} |")
+            avg_055 = subset["poly_up_size_055"].mean() if "poly_up_size_055" in subset.columns else 0
+            p_vwap = subset["poly_up_vwap"].mean() if "poly_up_vwap" in subset.columns else 0
+            k_vwap = subset["kalshi_yes_vwap"].mean() if "kalshi_yes_vwap" in subset.columns else 0
+            c_vwap = subset["combined_vwap"].mean() if "combined_vwap" in subset.columns else 0
+            status_mode = subset["execution_status"].mode()[0] if ("execution_status" in subset.columns and not subset["execution_status"].empty) else "-"
+            lines.append(f"| {asset} | {avg_055:.0f} | ${p_vwap:.3f} | ${k_vwap:.3f} | ${c_vwap:.3f} | {status_mode} |")
         lines.append("")
     else:
         lines.append("_No open snapshots in the last 24 hours._\n")
 
     if not closed_today.empty:
         lines.append("### On CLOSE\n")
-        lines.append("| Asset | Count | Avg Profit | Avg Size ≤0.55 (Up) | Avg Size ≤0.55 (Down) |")
-        lines.append("|-------|-------|------------|---------------------|-----------------------|")
+        lines.append("| Asset | Count | Avg Profit | Up ≤0.55 | Down ≤0.55 |")
+        lines.append("|-------|-------|------------|----------|------------|")
 
         for asset in sorted(closed_today["asset"].dropna().unique()):
             subset = closed_today[closed_today["asset"] == asset]
             count = len(subset)
             avg_profit = subset["profit"].mean() if "profit" in subset.columns else 0
-            avg_up = subset["poly_up_size_055"].mean()
-            avg_down = subset["poly_down_size_055"].mean()
+            avg_up = subset["poly_up_size_055"].mean() if "poly_up_size_055" in subset.columns else 0
+            avg_down = subset["poly_down_size_055"].mean() if "poly_down_size_055" in subset.columns else 0
             lines.append(f"| {asset} | {count} | ${avg_profit:.3f} | {avg_up:.0f} | {avg_down:.0f} |")
         lines.append("")
 
@@ -345,14 +358,12 @@ def write_github_summary(open_snaps, closed_snaps):
     if not open_snaps:
         lines.append("_None_\n")
     else:
-        lines.append("| Asset | Ticker | Dir | Cost | Up ≤0.55 | Down ≤0.55 | Slip $1k | Slip $3k |")
-        lines.append("|-------|--------|-----|------|----------|------------|----------|----------|")
+        lines.append("| Asset | Ticker | Dir | Combined VWAP | Status |")
+        lines.append("|-------|--------|-----|---------------|--------|")
         for s in open_snaps:
             lines.append(
                 f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
-                f"${s.get('combined_cost')} | {s.get('poly_up_size_055') or '-'} | "
-                f"{s.get('poly_down_size_055') or '-'} | {s.get('poly_up_slip_1000') or '-'} | "
-                f"{s.get('poly_up_slip_3000') or '-'} |"
+                f"${s.get('combined_vwap') or '-'} | {s.get('execution_status') or '-'} |"
             )
         lines.append("")
 
@@ -360,13 +371,12 @@ def write_github_summary(open_snaps, closed_snaps):
     if not closed_snaps:
         lines.append("_None_\n")
     else:
-        lines.append("| Asset | Ticker | Dir | Cost | Profit | Up ≤0.55 | Down ≤0.55 |")
-        lines.append("|-------|--------|-----|------|--------|----------|------------|")
+        lines.append("| Asset | Ticker | Dir | Cost | Profit |")
+        lines.append("|-------|--------|-----|------|--------|")
         for s in closed_snaps:
             lines.append(
                 f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
-                f"${s.get('combined_cost')} | ${s.get('profit')} | "
-                f"{s.get('poly_up_size_055') or '-'} | {s.get('poly_down_size_055') or '-'} |"
+                f"${s.get('combined_cost')} | ${s.get('profit')} |"
             )
         lines.append("")
 
