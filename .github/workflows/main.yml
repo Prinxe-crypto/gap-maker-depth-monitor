@@ -1,0 +1,32 @@
+name: Depth Monitor
+
+on:
+  schedule:
+    - cron: "*/2 * * * *"   # every 2 minutes
+  workflow_dispatch:        # manual run button
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests pandas
+
+      - name: Run Depth Monitor
+        run: python depth_monitor.py
+
+      - name: Commit snapshots
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Depth Monitor Bot"
+          git add depth_snapshots.csv last_seen_entries.json || true
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update depth snapshots"
+          git push || true
