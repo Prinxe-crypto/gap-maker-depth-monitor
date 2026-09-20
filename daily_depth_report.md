@@ -1,6 +1,6 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 19:56:34 UTC
+Generated at: 2026-09-20 19:57:42 UTC
 
 ## Summary (Last 24 hours)
 
@@ -16,10 +16,7 @@ Generated at: 2026-09-20 19:56:34 UTC
 
 | Asset | N | Filled | Skipped depth | Avg mins into window | Poly leg VWAP | Kalshi leg VWAP | Combined VWAP | Logged cost |
 |-------|---|--------|---------------|----------------------|---------------|-----------------|---------------|-------------|
-| BNB | 1 | 0 | 1 | n/a | n/a | n/a | 0.997 | 0.511 |
-| HYPE | 1 | 0 | 1 | n/a | n/a | n/a | 0.947 | 0.441 |
-| SOL | 1 | 0 | 1 | n/a | n/a | n/a | 0.990 | 0.551 |
-| ZEC | 2 | 0 | 1 | 1.3 | 0.732 | 0.731 | 1.227 | 0.725 |
+| ZEC | 1 | 0 | 0 | 1.3 | 0.732 | 0.731 | 1.463 | 0.770 |
 
 ## Closed trades
 
