@@ -1,8 +1,8 @@
 name: Depth Monitor
 
 on:
-  schedule:
-    - cron: "*/2 * * * *"
+  repository_dispatch:
+    types: [gap_maker_entry]
   workflow_dispatch:
 
 jobs:
@@ -28,5 +28,4 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "Depth Monitor Bot"
           git add depth_snapshots.csv closed_depth_snapshots.csv last_seen_open.json last_seen_closed.json daily_depth_report.md || true
-          git diff --quiet && git diff --staged --quiet || git commit -m "Depth update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git push || true
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Depth update [skip ci]" && git push)
