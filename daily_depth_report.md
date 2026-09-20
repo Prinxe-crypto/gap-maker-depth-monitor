@@ -1,14 +1,14 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 17:12:38 UTC
+Generated at: 2026-09-20 17:52:36 UTC
 
 ## Summary (Last 24 hours)
 
 - New OPEN snapshots: **64**
-- New CLOSED snapshots: **581**
+- New CLOSED snapshots: **588**
 
-- Total simulated profit: **$153.21**
-- Win rate: **87.4%**
+- Total simulated profit: **$155.47**
+- Win rate: **87.6%**
 - Average entry cost: **$0.618**
 
 ## Depth Available When Entries Happened
@@ -31,10 +31,10 @@ Generated at: 2026-09-20 17:12:38 UTC
 | Asset | Count | Avg Profit | Up ≤0.55 | Down ≤0.55 |
 |-------|-------|------------|----------|------------|
 | BNB | 60 | $0.224 | 0 | 0 |
-| BTC | 46 | $0.273 | nan | nan |
+| BTC | 47 | $0.273 | nan | nan |
 | DOGE | 62 | $0.258 | 0 | 0 |
 | ETH | 63 | $0.181 | nan | nan |
-| HYPE | 58 | $0.246 | 0 | 0 |
-| SOL | 69 | $0.201 | nan | nan |
-| XRP | 58 | $0.268 | 0 | 0 |
-| ZEC | 165 | $0.340 | nan | nan |
+| HYPE | 59 | $0.252 | 0 | 0 |
+| SOL | 70 | $0.202 | nan | nan |
+| XRP | 59 | $0.270 | 0 | 0 |
+| ZEC | 168 | $0.338 | nan | nan |
