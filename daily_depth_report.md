@@ -1,14 +1,14 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 19:10:41 UTC
+Generated at: 2026-09-20 19:38:37 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **64**
-- New CLOSED snapshots: **600**
+- New OPEN snapshots: **68**
+- New CLOSED snapshots: **604**
 
-- Total simulated profit: **$156.85**
-- Win rate: **87.2%**
+- Total simulated profit: **$158.53**
+- Win rate: **87.3%**
 - Average entry cost: **$0.617**
 
 ## Depth Available When Entries Happened
@@ -17,24 +17,24 @@ Generated at: 2026-09-20 19:10:41 UTC
 
 | Asset | Up ≤0.55 | Poly VWAP | Kalshi VWAP | Combined VWAP | Status |
 |-------|----------|-----------|-------------|---------------|--------|
-| BNB | 186 | $0.000 | $0.000 | $0.000 | - |
-| BTC | 5007 | $0.000 | $0.000 | $0.000 | - |
-| DOGE | 6845 | $0.000 | $0.000 | $0.000 | - |
-| ETH | 588 | $0.000 | $0.000 | $0.000 | - |
-| HYPE | 0 | $0.000 | $0.000 | $0.000 | - |
-| SOL | 881 | $0.000 | $0.000 | $0.000 | - |
-| XRP | 88 | $0.000 | $0.000 | $0.000 | - |
-| ZEC | 17 | $0.000 | $0.000 | $0.000 | - |
+| BNB | 149 | $0.997 | $0.000 | $0.997 | SKIPPED_INSUFFICIENT_DEPTH |
+| BTC | 5007 | $nan | $nan | $nan | - |
+| DOGE | 6845 | $nan | $nan | $nan | - |
+| ETH | 588 | $nan | $nan | $nan | - |
+| HYPE | 0 | $0.947 | $0.000 | $0.947 | SKIPPED_INSUFFICIENT_DEPTH |
+| SOL | 755 | $0.990 | $0.000 | $0.990 | SKIPPED_INSUFFICIENT_DEPTH |
+| XRP | 88 | $nan | $nan | $nan | - |
+| ZEC | 16 | $0.990 | $0.001 | $0.991 | SKIPPED_INSUFFICIENT_DEPTH |
 
 ### On CLOSE
 
 | Asset | Count | Avg Profit | Up ≤0.55 | Down ≤0.55 |
 |-------|-------|------------|----------|------------|
 | BNB | 61 | $0.225 | 0 | 0 |
-| BTC | 49 | $0.256 | 0 | 0 |
+| BTC | 50 | $0.255 | 0 | 0 |
 | DOGE | 62 | $0.258 | 0 | 0 |
-| ETH | 64 | $0.170 | nan | nan |
+| ETH | 65 | $0.174 | nan | nan |
 | HYPE | 60 | $0.255 | 0 | 0 |
 | SOL | 71 | $0.192 | nan | nan |
 | XRP | 60 | $0.256 | 0 | 0 |
-| ZEC | 173 | $0.343 | nan | nan |
+| ZEC | 175 | $0.345 | nan | nan |
