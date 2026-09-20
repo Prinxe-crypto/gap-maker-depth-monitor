@@ -19,8 +19,8 @@ from pathlib import Path
 
 # ========== CONFIG ==========
 GAP_MAKER_REPO = "Prinxe-crypto/Gap-maker"
-OPEN_POSITIONS_URL = f"https://raw.githubusercontent.com/{GAP_MAKER_REPO}/main/open_positions.csv"
-CLOSED_POSITIONS_URL = f"https://raw.githubusercontent.com/{GAP_MAKER_REPO}/main/closed_positions.csv"
+OPEN_POSITIONS_URL = f"https://raw.githubusercontent.com/{GAP_MAKER_REPO}/main/open_positions.csv?v={int(time.time())}"
+CLOSED_POSITIONS_URL = f"https://raw.githubusercontent.com/{GAP_MAKER_REPO}/main/closed_positions.csv?v={int(time.time())}"
 
 SNAPSHOT_FILE = "depth_snapshots.csv"
 CLOSED_SNAPSHOT_FILE = "closed_depth_snapshots.csv"
