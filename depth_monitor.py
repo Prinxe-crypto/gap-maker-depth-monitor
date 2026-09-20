@@ -1,14 +1,13 @@
 """
 Gap-Maker Depth & Liquidity Monitor
 -----------------------------------
-Companion script for Prinxe-crypto/Gap-maker.
+Companion script for Prinxe-crypto/Gap-maker
 
-- Does NOT place any orders
-- Does NOT modify Gap-maker files
-- Watches open_positions.csv for new entries
-- When a new entry is detected, snapshots full order books
-  (Polymarket + Kalshi) and calculates depth + estimated slippage
-- Also runs on schedule to keep data fresh
+Features:
+- Detects new open positions and snapshots full order books
+- Also processes closed positions (final depth + realized vs expected)
+- Writes a clean GitHub Step Summary table
+- Never places orders or modifies Gap-maker files
 """
 
 import os
@@ -25,17 +24,18 @@ OPEN_POSITIONS_URL = f"https://raw.githubusercontent.com/{GAP_MAKER_REPO}/main/o
 CLOSED_POSITIONS_URL = f"https://raw.githubusercontent.com/{GAP_MAKER_REPO}/main/closed_positions.csv"
 
 SNAPSHOT_FILE = "depth_snapshots.csv"
-LAST_SEEN_FILE = "last_seen_entries.json"
+CLOSED_SNAPSHOT_FILE = "closed_depth_snapshots.csv"
+LAST_SEEN_OPEN_FILE = "last_seen_open.json"
+LAST_SEEN_CLOSED_FILE = "last_seen_closed.json"
 
 KALSHI_BASE = "https://external-api.kalshi.com/trade-api/v2"
 CLOB_BASE = "https://clob.polymarket.com"
 GAMMA_BASE = "https://gamma-api.polymarket.com"
 
-# Sizes we care about for slippage estimation
 TEST_SIZES = [500, 1000, 2000, 3000, 5000]
 
 SESSION = requests.Session()
-SESSION.headers.update({"Accept": "application/json", "User-Agent": "depth-monitor/1.0"})
+SESSION.headers.update({"Accept": "application/json", "User-Agent": "depth-monitor/1.1"})
 
 
 def get_json(url, params=None, retries=3):
@@ -51,16 +51,16 @@ def get_json(url, params=None, retries=3):
     return None
 
 
-def load_last_seen():
-    if Path(LAST_SEEN_FILE).exists():
-        with open(LAST_SEEN_FILE) as f:
+def load_json_set(path):
+    if Path(path).exists():
+        with open(path) as f:
             return set(json.load(f))
     return set()
 
 
-def save_last_seen(seen):
-    with open(LAST_SEEN_FILE, "w") as f:
-        json.dump(list(seen), f)
+def save_json_set(path, data):
+    with open(path, "w") as f:
+        json.dump(list(data), f)
 
 
 def get_poly_book(token_id):
@@ -76,18 +76,17 @@ def get_poly_book(token_id):
 def get_poly_tokens(slug):
     data = get_json(f"{GAMMA_BASE}/markets", params={"slug": slug})
     if not data:
-        return None, None, None
+        return None, None
     m = data[0] if isinstance(data, list) else data
     tokens = json.loads(m["clobTokenIds"]) if isinstance(m.get("clobTokenIds"), str) else m.get("clobTokenIds")
     outcomes = json.loads(m["outcomes"]) if isinstance(m.get("outcomes"), str) else m.get("outcomes")
-    return tokens, outcomes, m
+    return tokens, outcomes
 
 
 def get_kalshi_orderbook(ticker):
     data = get_json(f"{KALSHI_BASE}/markets/{ticker}/orderbook")
     if not data:
         return {"yes": [], "no": []}
-    # Kalshi returns yes/no bids
     ob = data.get("orderbook", data.get("orderbook_fp", {}))
     yes = [(float(p), float(s)) for p, s in ob.get("yes", ob.get("yes_dollars", []))]
     no  = [(float(p), float(s)) for p, s in ob.get("no", ob.get("no_dollars", []))]
@@ -95,16 +94,14 @@ def get_kalshi_orderbook(ticker):
 
 
 def size_at_or_better(asks, max_price):
-    """Total size available at price <= max_price"""
     return sum(size for price, size in asks if price <= max_price)
 
 
 def estimate_slippage(asks, target_size):
-    """Walk the ask book and return average fill price for target_size"""
     if not asks:
-        return None, 0
+        return None, 0.0
     sorted_asks = sorted(asks, key=lambda x: x[0])
-    remaining = target_size
+    remaining = float(target_size)
     cost = 0.0
     filled = 0.0
     for price, size in sorted_asks:
@@ -115,110 +112,205 @@ def estimate_slippage(asks, target_size):
         if remaining <= 0:
             break
     if filled == 0:
-        return None, 0
+        return None, 0.0
     return round(cost / filled, 4), round(filled, 2)
 
 
-def snapshot_entry(row):
-    """Take full depth snapshot for one open position"""
-    asset = row["asset"]
-    poly_slug = row["poly_slug"]
-    kalshi_ticker = row["kalshi_ticker"]
-    direction = row["direction"]
-    combined_cost = float(row["combined_cost"])
-    logged_at = row["logged_at"]
-
-    print(f"  Snapshotting {asset} | {kalshi_ticker} | dir={direction} | cost={combined_cost}")
-
-    # --- Polymarket ---
-    tokens, outcomes, market = get_poly_tokens(poly_slug)
-    poly_data = {}
-    if tokens and outcomes:
-        for i, tid in enumerate(tokens):
-            side = outcomes[i]
-            book = get_poly_book(tid)
-            asks = book["asks"]
-            poly_data[side] = {
-                "best_ask": min([p for p, s in asks], default=None),
-                "size_le_050": size_at_or_better(asks, 0.50),
-                "size_le_052": size_at_or_better(asks, 0.52),
-                "size_le_055": size_at_or_better(asks, 0.55),
-                "size_le_058": size_at_or_better(asks, 0.58),
-                "size_le_060": size_at_or_better(asks, 0.60),
-            }
-            # Slippage estimates
-            for size in TEST_SIZES:
-                avg_price, filled = estimate_slippage(asks, size)
-                poly_data[side][f"slip_{size}"] = avg_price
-                poly_data[side][f"filled_{size}"] = filled
-
-    # --- Kalshi ---
-    kalshi_ob = get_kalshi_orderbook(kalshi_ticker)
-
-    snapshot = {
-        "snapshot_time": datetime.now(timezone.utc).isoformat(),
-        "logged_at": logged_at,
-        "asset": asset,
-        "kalshi_ticker": kalshi_ticker,
-        "poly_slug": poly_slug,
-        "direction": direction,
-        "combined_cost": combined_cost,
-        "poly_up_best_ask": poly_data.get("Up", {}).get("best_ask"),
-        "poly_up_size_le_055": poly_data.get("Up", {}).get("size_le_055"),
-        "poly_down_best_ask": poly_data.get("Down", {}).get("best_ask"),
-        "poly_down_size_le_055": poly_data.get("Down", {}).get("size_le_055"),
-        "poly_up_slip_1000": poly_data.get("Up", {}).get("slip_1000"),
-        "poly_down_slip_1000": poly_data.get("Down", {}).get("slip_1000"),
-        "poly_up_slip_3000": poly_data.get("Up", {}).get("slip_3000"),
-        "poly_down_slip_3000": poly_data.get("Down", {}).get("slip_3000"),
-        "kalshi_yes_levels": len(kalshi_ob.get("yes", [])),
-        "kalshi_no_levels": len(kalshi_ob.get("no", [])),
+def snapshot_market(poly_slug, kalshi_ticker):
+    """Returns depth info for both platforms"""
+    result = {
+        "poly_up_best_ask": None,
+        "poly_up_size_055": None,
+        "poly_up_slip_1000": None,
+        "poly_up_slip_3000": None,
+        "poly_down_best_ask": None,
+        "poly_down_size_055": None,
+        "poly_down_slip_1000": None,
+        "poly_down_slip_3000": None,
+        "kalshi_yes_levels": 0,
+        "kalshi_no_levels": 0,
     }
 
-    # Save raw full books too (optional, for deep analysis)
-    snapshot["poly_raw"] = json.dumps(poly_data)
-    return snapshot
+    # Polymarket
+    tokens, outcomes = get_poly_tokens(poly_slug)
+    if tokens and outcomes:
+        for i, tid in enumerate(tokens):
+            side = outcomes[i]  # "Up" or "Down"
+            book = get_poly_book(tid)
+            asks = book["asks"]
+            prefix = "poly_up" if side == "Up" else "poly_down"
+
+            result[f"{prefix}_best_ask"] = min([p for p, s in asks], default=None)
+            result[f"{prefix}_size_055"] = size_at_or_better(asks, 0.55)
+            avg1k, _ = estimate_slippage(asks, 1000)
+            avg3k, _ = estimate_slippage(asks, 3000)
+            result[f"{prefix}_slip_1000"] = avg1k
+            result[f"{prefix}_slip_3000"] = avg3k
+
+    # Kalshi
+    kalshi_ob = get_kalshi_orderbook(kalshi_ticker)
+    result["kalshi_yes_levels"] = len(kalshi_ob.get("yes", []))
+    result["kalshi_no_levels"] = len(kalshi_ob.get("no", []))
+
+    return result
 
 
-def main():
-    print(f"=== Depth Monitor started at {datetime.now(timezone.utc).isoformat()} ===")
-
-    # Load current open positions from Gap-maker
+def process_open_positions():
+    print("\n--- Checking OPEN positions ---")
     try:
         open_df = pd.read_csv(OPEN_POSITIONS_URL)
     except Exception as e:
-        print(f"Could not load open_positions.csv: {e}")
-        open_df = pd.DataFrame()
+        print(f"Could not load open_positions: {e}")
+        return []
 
     if open_df.empty:
-        print("No open positions found.")
-        return
+        print("No open positions.")
+        return []
 
-    last_seen = load_last_seen()
+    last_seen = load_json_set(LAST_SEEN_OPEN_FILE)
     current_keys = set()
-    new_snapshots = []
+    new_rows = []
 
     for _, row in open_df.iterrows():
         key = f"{row['kalshi_ticker']}_{row['direction']}_{row['logged_at']}"
         current_keys.add(key)
 
         if key not in last_seen:
-            print(f"New entry detected: {key}")
-            snap = snapshot_entry(row)
-            new_snapshots.append(snap)
+            print(f"New OPEN entry: {row['asset']} | {row['kalshi_ticker']} | {row['direction']}")
+            depth = snapshot_market(row["poly_slug"], row["kalshi_ticker"])
 
-    # Save new snapshots
-    if new_snapshots:
-        snap_df = pd.DataFrame(new_snapshots)
+            record = {
+                "snapshot_time": datetime.now(timezone.utc).isoformat(),
+                "type": "OPEN",
+                "asset": row["asset"],
+                "kalshi_ticker": row["kalshi_ticker"],
+                "poly_slug": row["poly_slug"],
+                "direction": row["direction"],
+                "combined_cost": row["combined_cost"],
+                "logged_at": row["logged_at"],
+                **depth
+            }
+            new_rows.append(record)
+
+    if new_rows:
+        df = pd.DataFrame(new_rows)
         if Path(SNAPSHOT_FILE).exists():
             old = pd.read_csv(SNAPSHOT_FILE)
-            snap_df = pd.concat([old, snap_df], ignore_index=True)
-        snap_df.to_csv(SNAPSHOT_FILE, index=False)
-        print(f"Saved {len(new_snapshots)} new depth snapshot(s)")
+            df = pd.concat([old, df], ignore_index=True)
+        df.to_csv(SNAPSHOT_FILE, index=False)
+        print(f"Saved {len(new_rows)} new OPEN snapshots")
 
-    # Update last seen
-    save_last_seen(current_keys)
-    print("=== Depth Monitor finished ===")
+    save_json_set(LAST_SEEN_OPEN_FILE, current_keys)
+    return new_rows
+
+
+def process_closed_positions():
+    print("\n--- Checking CLOSED positions ---")
+    try:
+        closed_df = pd.read_csv(CLOSED_POSITIONS_URL)
+    except Exception as e:
+        print(f"Could not load closed_positions: {e}")
+        return []
+
+    if closed_df.empty:
+        print("No closed positions.")
+        return []
+
+    last_seen = load_json_set(LAST_SEEN_CLOSED_FILE)
+    current_keys = set()
+    new_rows = []
+
+    for _, row in closed_df.iterrows():
+        # Use a stable key
+        key = f"{row.get('kalshi_ticker', '')}_{row.get('direction', '')}_{row.get('logged_at', row.get('close_time', ''))}"
+        current_keys.add(key)
+
+        if key not in last_seen:
+            print(f"New CLOSED trade: {row.get('asset')} | {row.get('kalshi_ticker')}")
+            depth = snapshot_market(row.get("poly_slug", ""), row.get("kalshi_ticker", ""))
+
+            record = {
+                "snapshot_time": datetime.now(timezone.utc).isoformat(),
+                "type": "CLOSED",
+                "asset": row.get("asset"),
+                "kalshi_ticker": row.get("kalshi_ticker"),
+                "poly_slug": row.get("poly_slug"),
+                "direction": row.get("direction"),
+                "combined_cost": row.get("combined_cost"),
+                "profit": row.get("profit"),
+                "payout": row.get("payout"),
+                "kalshi_outcome": row.get("kalshi_outcome"),
+                "polymarket_outcome": row.get("polymarket_outcome"),
+                **depth
+            }
+            new_rows.append(record)
+
+    if new_rows:
+        df = pd.DataFrame(new_rows)
+        if Path(CLOSED_SNAPSHOT_FILE).exists():
+            old = pd.read_csv(CLOSED_SNAPSHOT_FILE)
+            df = pd.concat([old, df], ignore_index=True)
+        df.to_csv(CLOSED_SNAPSHOT_FILE, index=False)
+        print(f"Saved {len(new_rows)} new CLOSED snapshots")
+
+    save_json_set(LAST_SEEN_CLOSED_FILE, current_keys)
+    return new_rows
+
+
+def write_github_summary(open_snaps, closed_snaps):
+    """Write a nice markdown table to GitHub Step Summary"""
+    summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not summary_file:
+        return
+
+    lines = []
+    lines.append("## Depth Monitor Summary\n")
+    lines.append(f"**Run time:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+
+    # Open positions table
+    lines.append("### New Open Positions Snapshotted\n")
+    if not open_snaps:
+        lines.append("_No new open positions detected._\n")
+    else:
+        lines.append("| Asset | Ticker | Dir | Cost | Poly Up ≤0.55 | Poly Down ≤0.55 | Slip $1k (Up) | Slip $3k (Up) |")
+        lines.append("|-------|--------|-----|------|---------------|-----------------|---------------|---------------|")
+        for s in open_snaps:
+            lines.append(
+                f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
+                f"${s.get('combined_cost')} | {s.get('poly_up_size_055') or '-'} | "
+                f"{s.get('poly_down_size_055') or '-'} | {s.get('poly_up_slip_1000') or '-'} | "
+                f"{s.get('poly_up_slip_3000') or '-'} |"
+            )
+        lines.append("")
+
+    # Closed positions table
+    lines.append("### New Closed Trades Snapshotted\n")
+    if not closed_snaps:
+        lines.append("_No new closed trades detected._\n")
+    else:
+        lines.append("| Asset | Ticker | Dir | Cost | Profit | Poly Up ≤0.55 | Poly Down ≤0.55 |")
+        lines.append("|-------|--------|-----|------|--------|---------------|-----------------|")
+        for s in closed_snaps:
+            lines.append(
+                f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
+                f"${s.get('combined_cost')} | ${s.get('profit')} | "
+                f"{s.get('poly_up_size_055') or '-'} | {s.get('poly_down_size_055') or '-'} |"
+            )
+        lines.append("")
+
+    with open(summary_file, "a") as f:
+        f.write("\n".join(lines))
+
+
+def main():
+    print(f"=== Depth Monitor started at {datetime.now(timezone.utc).isoformat()} ===")
+
+    open_snaps = process_open_positions()
+    closed_snaps = process_closed_positions()
+
+    write_github_summary(open_snaps, closed_snaps)
+
+    print("\n=== Depth Monitor finished ===")
 
 
 if __name__ == "__main__":
