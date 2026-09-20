@@ -12,6 +12,8 @@ Fixes vs previous version:
   6. No depth snapshot on CLOSED trades (expired books are useless).
   7. Combined VWAP is only computed when BOTH legs fill. Report only averages valid rows.
   8. Logs minutes_into_window so results can be split by entry timing.
+  9. Multi-size walk: combined VWAP at many sizes (10 ... 25,000 contracts) plus the exact
+     largest size whose combined VWAP stays <= the cost cap (max_size_at_cap).
 """
 
 import os
@@ -39,7 +41,10 @@ KALSHI_BASE = "https://external-api.kalshi.com/trade-api/v2"
 CLOB_BASE = "https://clob.polymarket.com"
 GAMMA_BASE = "https://gamma-api.polymarket.com"
 
+MAX_COMBINED_COST = 0.80
 MAX_SNAPSHOT_AGE_SEC = 90   # older than this after logged_at => STALE_SNAPSHOT
+SIZES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000]
+REPORT_SIZES = [10, 100, 500, 1000, 5000, 25000]
 VALID_STATUSES = ("FILLED", "SKIPPED_INSUFFICIENT_DEPTH", "SKIPPED_COST_EXCEEDED")
 
 SESSION = requests.Session()
@@ -143,6 +148,37 @@ def _num(v):
     return v if isinstance(v, (int, float)) else None
 
 
+def multi_size_walk(poly_asks, kalshi_asks, cap, sizes=SIZES):
+    """Walk BOTH legs at many sizes. Returns ({size: combined_vwap or None}, max_size_at_cap).
+    max_size_at_cap = largest whole number of contracts both legs can fill with combined VWAP <= cap.
+    Average cost only rises as size grows (cheapest asks are used first), so a binary search is exact."""
+    pf = [{"price": p, "size": q} for p, q in sorted(poly_asks)]
+    kf = [{"price": p, "size": q} for p, q in sorted(kalshi_asks)]
+
+    def combined(n):
+        pr = calculate_vwap_fill(pf, target_shares=n, max_combined_cost=1.0)
+        kr = calculate_vwap_fill(kf, target_shares=n, max_combined_cost=1.0)
+        if _full(pr) and _full(kr):
+            return pr["vwap_price"] + kr["vwap_price"]
+        return None
+
+    by_size = {}
+    for n in sizes:
+        c = combined(n)
+        by_size[n] = None if c is None else round(c, 4)
+
+    depth = int(min(sum(q for _, q in poly_asks), sum(q for _, q in kalshi_asks)))
+    lo, hi = 0, depth
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        c = combined(mid)
+        if c is not None and c <= cap:
+            lo = mid
+        else:
+            hi = mid - 1
+    return by_size, lo
+
+
 def parse_close_time(ticker):
     """KXBTC15M-26SEP201530-30 -> close 2026-09-20 15:30 America/New_York."""
     m = re.search(r"-(\d{2})([A-Z]{3})(\d{2})(\d{4})-", ticker or "")
@@ -156,7 +192,7 @@ def parse_close_time(ticker):
     return dt.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(timezone.utc)
 
 
-def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_combined_cost=0.80):
+def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_combined_cost=MAX_COMBINED_COST):
     result = {
         "poly_up_best_ask": None, "poly_up_size_055": None, "poly_up_vwap": None, "poly_up_unfilled": None,
         "poly_down_best_ask": None, "poly_down_size_055": None, "poly_down_vwap": None, "poly_down_unfilled": None,
@@ -166,7 +202,10 @@ def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_
         "poly_leg_vwap": None, "kalshi_leg_vwap": None,
         "execution_status": "ERROR_BOOK_UNAVAILABLE",
         "combined_vwap": None,
+        "max_size_at_cap": None,
     }
+    for n in SIZES:
+        result[f"combined_vwap_{n}"] = None
 
     # Direction A = Poly Up + Kalshi No ; Direction B = Poly Down + Kalshi Yes
     poly_prefix, kalshi_side = ("poly_up", "no") if str(direction).strip().upper() == "A" else ("poly_down", "yes")
@@ -176,6 +215,7 @@ def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_
     tokens, outcomes = get_poly_tokens(poly_slug)
     poly_ok = bool(tokens and outcomes)
     poly_res = {}
+    poly_asks_by_prefix = {}
     if poly_ok:
         for i, tid in enumerate(tokens):
             side = str(outcomes[i]).strip().lower()
@@ -189,6 +229,7 @@ def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_
             result[f"{prefix}_vwap"] = _num(res.get("vwap_price")) if _full(res) else None
             result[f"{prefix}_unfilled"] = res.get("unfilled_shares")
             poly_res[prefix] = res
+            poly_asks_by_prefix[prefix] = asks
 
     # --- 2. Kalshi ---
     kalshi_asks, kalshi_ok = get_kalshi_asks(kalshi_ticker)
@@ -201,6 +242,12 @@ def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_
 
     if not (poly_ok and kalshi_ok):
         return result   # status stays ERROR_BOOK_UNAVAILABLE
+
+    # --- 2b. Multi-size walk on the ACTUAL legs of this trade ---
+    by_size, max_size = multi_size_walk(poly_asks_by_prefix.get(poly_prefix, []), kalshi_asks[kalshi_side], max_combined_cost)
+    for n, c in by_size.items():
+        result[f"combined_vwap_{n}"] = c
+    result["max_size_at_cap"] = max_size
 
     # --- 3. Combined validation on the ACTUAL legs of this trade ---
     p_res = poly_res.get(poly_prefix)
@@ -358,27 +405,44 @@ def generate_daily_report():
         lines.append(f"- Win rate: **{(closed_today['profit'] > 0).mean() * 100:.1f}%**")
         lines.append(f"- Average entry cost: **${closed_today['combined_cost'].mean():.3f}**\n")
 
-    lines.append("## Depth at Entry (valid snapshots only, target 100 contracts per leg)\n")
+    lines.append("## Depth at Entry (valid snapshots only)\n")
     valid = open_today[open_today["execution_status"].isin(VALID_STATUSES)] if (not open_today.empty and "execution_status" in open_today.columns) else pd.DataFrame()
     if not valid.empty and "poly_leg" in valid.columns:
         valid = valid[valid["poly_leg"].notna()]   # drop pre-patch rows (wrong legs / no leg VWAPs)
+    if not valid.empty and "max_size_at_cap" in valid.columns:
+        valid = valid[valid["max_size_at_cap"].notna()]
 
     if valid.empty:
         lines.append("_No valid (fresh, non-error) open snapshots in the last 24 hours._\n")
     else:
-        lines.append("| Asset | N | Filled | Skipped depth | Avg mins into window | Poly leg VWAP | Kalshi leg VWAP | Combined VWAP | Logged cost |")
-        lines.append("|-------|---|--------|---------------|----------------------|---------------|-----------------|---------------|-------------|")
+        lines.append(f"### Max size with combined VWAP <= ${MAX_COMBINED_COST:.2f} (contracts per leg)\n")
+        lines.append("| Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |")
+        lines.append("|-------|---|------------|-------|------|----------------------|-------------|")
         for asset in sorted(valid["asset"].dropna().unique()):
-            s = valid[valid["asset"] == asset]
-            full = s[s["combined_vwap"].notna()]
-            fmt = lambda col, d=3: (f"{full[col].mean():.{d}f}" if (not full.empty and col in full.columns and full[col].notna().any()) else "n/a")
-            mins = f"{s['minutes_into_window'].mean():.1f}" if "minutes_into_window" in s.columns and s["minutes_into_window"].notna().any() else "n/a"
-            lines.append(
-                f"| {asset} | {len(s)} | {(s['execution_status'] == 'FILLED').sum()} | "
-                f"{(s['execution_status'] == 'SKIPPED_INSUFFICIENT_DEPTH').sum()} | {mins} | "
-                f"{fmt('poly_leg_vwap')} | {fmt('kalshi_leg_vwap')} | {fmt('combined_vwap')} | {fmt('combined_cost')} |"
-            )
+            s_ = valid[valid["asset"] == asset]
+            m = s_["max_size_at_cap"]
+            mins = f"{s_['minutes_into_window'].mean():.1f}" if "minutes_into_window" in s_.columns and s_["minutes_into_window"].notna().any() else "n/a"
+            lc = f"{s_['combined_cost'].mean():.3f}" if "combined_cost" in s_.columns else "n/a"
+            lines.append(f"| {asset} | {len(s_)} | {m.median():.0f} | {m.min():.0f} | {m.max():.0f} | {mins} | {lc} |")
         lines.append("")
+
+        lines.append("### Average combined VWAP by size  (cell = avg cost, filled/N)\n")
+        hdr = "| Asset | " + " | ".join(f"{n:,}" for n in REPORT_SIZES) + " |"
+        lines.append(hdr)
+        lines.append("|-------|" + "|".join("---" for _ in REPORT_SIZES) + "|")
+        for asset in sorted(valid["asset"].dropna().unique()):
+            s_ = valid[valid["asset"] == asset]
+            cells = []
+            for n in REPORT_SIZES:
+                col = f"combined_vwap_{n}"
+                if col in s_.columns:
+                    ok_ = s_[col].dropna()
+                    cells.append(f"{ok_.mean():.2f} ({len(ok_)}/{len(s_)})" if len(ok_) else f"- (0/{len(s_)})")
+                else:
+                    cells.append("n/a")
+            lines.append(f"| {asset} | " + " | ".join(cells) + " |")
+        lines.append("")
+        lines.append("_A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._\n")
 
     if not closed_today.empty:
         lines.append("## Closed trades\n")
@@ -410,12 +474,12 @@ def write_github_summary(open_snaps, closed_snaps):
     if not open_snaps:
         lines.append("_None_\n")
     else:
-        lines.append("| Asset | Ticker | Dir | Poly leg | Kalshi leg | Combined | Mins in | Status |")
-        lines.append("|-------|--------|-----|----------|------------|----------|---------|--------|")
+        lines.append("| Asset | Ticker | Dir | Poly leg | Kalshi leg | Combined | Max size | Mins in | Status |")
+        lines.append("|-------|--------|-----|----------|------------|----------|----------|---------|--------|")
         f3 = lambda v: "n/a" if v is None or (isinstance(v, float) and v != v) else f"${v:.3f}"
         for s in open_snaps:
             lines.append(f"| {s.get('asset')} | {s.get('kalshi_ticker')} | {s.get('direction')} | "
-                         f"{f3(s.get('poly_leg_vwap'))} | {f3(s.get('kalshi_leg_vwap'))} | {f3(s.get('combined_vwap'))} | "
+                         f"{f3(s.get('poly_leg_vwap'))} | {f3(s.get('kalshi_leg_vwap'))} | {f3(s.get('combined_vwap'))} | {s.get('max_size_at_cap')} | "
                          f"{s.get('minutes_into_window')} | {s.get('execution_status')} |")
         lines.append("")
     lines.append("### New Closed Trades\n")
