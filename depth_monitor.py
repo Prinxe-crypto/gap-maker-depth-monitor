@@ -375,7 +375,6 @@ def write_github_summary(open_snaps, closed_snaps):
 
 
 def main():
-    time.sleep(10)  # Brief pause for GitHub raw CDN cache refresh
     print(f"=== Depth Monitor started at {datetime.now(timezone.utc).isoformat()} ===")
 
     open_snaps = process_open_positions()
