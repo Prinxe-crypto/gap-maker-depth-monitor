@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 19:58:33 UTC
+Generated at: 2026-09-20 20:01:23 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **70**
+- New OPEN snapshots: **73**
 - New CLOSED trades: **609**
-- Snapshot statuses: LEGACY_NO_STATUS: 64, SKIPPED_INSUFFICIENT_DEPTH: 4, SKIPPED_COST_EXCEEDED: 1, STALE_SNAPSHOT: 1
+- Snapshot statuses: LEGACY_NO_STATUS: 64, SKIPPED_INSUFFICIENT_DEPTH: 4, STALE_SNAPSHOT: 3, SKIPPED_COST_EXCEEDED: 2
 
 - Total simulated profit: **$159.66**
 - Win rate: **87.2%**
@@ -16,7 +16,7 @@ Generated at: 2026-09-20 19:58:33 UTC
 
 | Asset | N | Filled | Skipped depth | Avg mins into window | Poly leg VWAP | Kalshi leg VWAP | Combined VWAP | Logged cost |
 |-------|---|--------|---------------|----------------------|---------------|-----------------|---------------|-------------|
-| ZEC | 1 | 0 | 0 | 1.3 | 0.732 | 0.731 | 1.463 | 0.770 |
+| ZEC | 2 | 0 | 0 | 0.8 | 0.783 | 0.590 | 1.373 | 0.610 |
 
 ## Closed trades
 
