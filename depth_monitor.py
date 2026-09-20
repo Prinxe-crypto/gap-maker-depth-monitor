@@ -192,7 +192,7 @@ def parse_close_time(ticker):
     return dt.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(timezone.utc)
 
 
-def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_combined_cost=MAX_COMBINED_COST):
+def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_combined_cost=MAX_COMBINED_COST, skip_fetch=False):
     result = {
         "poly_up_best_ask": None, "poly_up_size_055": None, "poly_up_vwap": None, "poly_up_unfilled": None,
         "poly_down_best_ask": None, "poly_down_size_055": None, "poly_down_vwap": None, "poly_down_unfilled": None,
@@ -210,6 +210,8 @@ def snapshot_market(poly_slug, kalshi_ticker, direction, target_shares=100, max_
     # Direction A = Poly Up + Kalshi No ; Direction B = Poly Down + Kalshi Yes
     poly_prefix, kalshi_side = ("poly_up", "no") if str(direction).strip().upper() == "A" else ("poly_down", "yes")
     result["poly_leg"], result["kalshi_leg"] = poly_prefix, kalshi_side
+    if skip_fetch:
+        return result   # market already closed / entry too old: do not waste API calls on expired books
 
     # --- 1. Polymarket ---
     tokens, outcomes = get_poly_tokens(poly_slug)
@@ -295,8 +297,10 @@ def process_open_positions():
         age_sec = (now - logged).total_seconds() if pd.notna(logged) else None
         close_dt = parse_close_time(row["kalshi_ticker"])
 
-        depth = snapshot_market(row["poly_slug"], row["kalshi_ticker"], row["direction"])
-        stale = (age_sec is None) or (age_sec > MAX_SNAPSHOT_AGE_SEC) or (close_dt is not None and now >= close_dt)
+        market_closed = close_dt is not None and now >= close_dt
+        too_old = age_sec is None or age_sec > 300
+        depth = snapshot_market(row["poly_slug"], row["kalshi_ticker"], row["direction"], skip_fetch=(market_closed or too_old))
+        stale = (age_sec is None) or (age_sec > MAX_SNAPSHOT_AGE_SEC) or market_closed
         if stale:
             depth["execution_status"] = "STALE_SNAPSHOT"
 
@@ -378,6 +382,40 @@ def process_closed_positions():
     return new_rows
 
 
+def entry_timing_section():
+    """Win rate / profit by how far into the 15-min window the entry was logged.
+       Uses Gap-maker's closed_positions.csv directly, so it covers ALL history."""
+    try:
+        df = pd.read_csv(CLOSED_POSITIONS_URL)
+    except Exception as e:
+        return [f"_Entry-timing table unavailable: {e}_\n"]
+    ts_col = next((c for c in ("logged_at", "opened_at", "entry_time", "open_time") if c in df.columns), None)
+    if ts_col is None or "kalshi_ticker" not in df.columns or "profit" not in df.columns:
+        return [f"_Entry-timing table needs an entry timestamp. closed_positions.csv columns: {', '.join(map(str, df.columns))}_\n"]
+    mins = []
+    for tk, ts in zip(df["kalshi_ticker"], df[ts_col]):
+        close_dt, t = parse_close_time(str(tk)), pd.to_datetime(ts, utc=True, errors="coerce")
+        mins.append(None if close_dt is None or pd.isna(t) else 15 - (close_dt - t.to_pydatetime()).total_seconds() / 60)
+    df = df.assign(mins_in=mins)
+    df = df[df["mins_in"].notna() & (df["mins_in"] >= 0) & (df["mins_in"] <= 15.5)]
+    if df.empty:
+        return ["_Entry-timing table: no rows with usable timestamps._\n"]
+    bins, labels = [0, 3, 7, 11, 15.5], ["0-3 min", "3-7 min", "7-11 min", "11-15 min"]
+    df["bucket"] = pd.cut(df["mins_in"], bins=bins, labels=labels, right=False, include_lowest=True)
+    out = ["## Closed trades by entry timing (all history)\n",
+           "| Entry time in window | Trades | Win rate | Avg cost | Avg profit | Total profit |",
+           "|----------------------|--------|----------|----------|------------|--------------|"]
+    for lab in labels:
+        s_ = df[df["bucket"] == lab]
+        if s_.empty:
+            out.append(f"| {lab} | 0 | - | - | - | - |")
+            continue
+        cost = f"${s_['combined_cost'].mean():.3f}" if "combined_cost" in s_.columns else "n/a"
+        out.append(f"| {lab} | {len(s_)} | {(s_['profit'] > 0).mean() * 100:.0f}% | {cost} | ${s_['profit'].mean():.3f} | ${s_['profit'].sum():.2f} |")
+    out.append("")
+    return out
+
+
 def generate_daily_report():
     print("\n--- Generating Daily Report ---")
     lines = []
@@ -455,6 +493,8 @@ def generate_daily_report():
             s = closed_today[closed_today["asset"] == asset]
             lines.append(f"| {asset} | {len(s)} | {(s['profit'] > 0).mean() * 100:.0f}% | ${s['profit'].mean():.3f} | ${s['profit'].sum():.2f} |")
         lines.append("")
+
+    lines.extend(entry_timing_section())
 
     report = "\n".join(lines)
     with open(DAILY_REPORT_FILE, "w") as f:
