@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-09-20
 
-Generated at: 2026-09-20 20:28:42 UTC
+Generated at: 2026-09-20 20:30:50 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **77**
+- New OPEN snapshots: **80**
 - New CLOSED trades: **615**
-- Snapshot statuses: LEGACY_NO_STATUS: 64, STALE_SNAPSHOT: 6, SKIPPED_INSUFFICIENT_DEPTH: 4, SKIPPED_COST_EXCEEDED: 3
+- Snapshot statuses: LEGACY_NO_STATUS: 64, STALE_SNAPSHOT: 7, SKIPPED_COST_EXCEEDED: 5, SKIPPED_INSUFFICIENT_DEPTH: 4
 
 - Total simulated profit: **$160.56**
 - Win rate: **87.0%**
@@ -18,13 +18,17 @@ Generated at: 2026-09-20 20:28:42 UTC
 
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
+| ETH | 1 | 0 | 0 | 0 | 0.4 | 0.630 |
 | SOL | 1 | 0 | 0 | 0 | 7.3 | 0.760 |
+| ZEC | 1 | 0 | 0 | 0 | 0.4 | 0.470 |
 
 ### Average combined VWAP by size  (cell = avg cost, filled/N)
 
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
+| ETH | 1.00 (1/1) | 1.01 (1/1) | 1.03 (1/1) | 1.05 (1/1) | 1.23 (1/1) | - (0/1) |
 | SOL | 0.98 (1/1) | 1.01 (1/1) | 1.05 (1/1) | 1.09 (1/1) | - (0/1) | - (0/1) |
+| ZEC | 1.08 (1/1) | 1.38 (1/1) | 1.55 (1/1) | 1.61 (1/1) | - (0/1) | - (0/1) |
 
 _A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
 
