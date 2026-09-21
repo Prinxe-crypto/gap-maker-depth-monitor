@@ -1,16 +1,16 @@
 # Daily Depth & Performance Report — 2026-09-21
 
-Generated at: 2026-09-21 19:48:37 UTC
+Generated at: 2026-09-21 19:50:43 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **15**
-- New CLOSED trades: **21**
-- Snapshot statuses: STALE_SNAPSHOT: 7, SKIPPED_COST_EXCEEDED: 7, FILLED: 1
+- New OPEN snapshots: **14**
+- New CLOSED trades: **18**
+- Snapshot statuses: SKIPPED_COST_EXCEEDED: 7, STALE_SNAPSHOT: 6, FILLED: 1
 
-- Total simulated profit: **$3.59**
-- Win rate: **76.2%**
-- Average entry cost: **$0.591**
+- Total simulated profit: **$3.10**
+- Win rate: **77.8%**
+- Average entry cost: **$0.606**
 
 ## Depth at Entry (valid snapshots only)
 
@@ -42,11 +42,11 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 
 | Asset | Count | Win rate | Avg Profit | Total Profit |
 |-------|-------|----------|------------|--------------|
-| BNB | 3 | 67% | $0.077 | $0.23 |
+| BNB | 2 | 50% | $-0.128 | $-0.26 |
 | DOGE | 3 | 67% | $0.115 | $0.35 |
 | ETH | 3 | 100% | $0.416 | $1.25 |
-| HYPE | 2 | 50% | $-0.096 | $-0.19 |
-| SOL | 2 | 100% | $0.345 | $0.69 |
+| HYPE | 1 | 100% | $0.250 | $0.25 |
+| SOL | 1 | 100% | $0.240 | $0.24 |
 | XRP | 2 | 0% | $-0.521 | $-1.04 |
 | ZEC | 6 | 100% | $0.385 | $2.31 |
 
