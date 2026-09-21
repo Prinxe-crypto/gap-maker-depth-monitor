@@ -1,16 +1,16 @@
 # Daily Depth & Performance Report — 2026-09-21
 
-Generated at: 2026-09-21 20:20:39 UTC
+Generated at: 2026-09-21 20:22:37 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **9**
-- New CLOSED trades: **13**
-- Snapshot statuses: SKIPPED_COST_EXCEEDED: 6, STALE_SNAPSHOT: 2, FILLED: 1
+- New OPEN snapshots: **8**
+- New CLOSED trades: **12**
+- Snapshot statuses: SKIPPED_COST_EXCEEDED: 5, STALE_SNAPSHOT: 2, FILLED: 1
 
-- Total simulated profit: **$1.02**
-- Win rate: **69.2%**
-- Average entry cost: **$0.614**
+- Total simulated profit: **$1.54**
+- Win rate: **75.0%**
+- Average entry cost: **$0.622**
 
 ## Depth at Entry (valid snapshots only)
 
@@ -22,7 +22,6 @@ Generated at: 2026-09-21 20:20:39 UTC
 | DOGE | 1 | 0 | 0 | 0 | 12.3 | 0.793 |
 | ETH | 1 | 0 | 0 | 0 | 0.4 | 0.630 |
 | HYPE | 1 | 0 | 0 | 0 | 12.3 | 0.750 |
-| SOL | 1 | 0 | 0 | 0 | 7.3 | 0.760 |
 | ZEC | 1 | 0 | 0 | 0 | 0.4 | 0.470 |
 
 ### Average combined VWAP by size  (cell = avg cost, filled/N)
@@ -33,7 +32,6 @@ Generated at: 2026-09-21 20:20:39 UTC
 | DOGE | 1.02 (1/1) | 1.07 (1/1) | 1.10 (1/1) | 1.14 (1/1) | - (0/1) | - (0/1) |
 | ETH | 1.00 (1/1) | 1.01 (1/1) | 1.03 (1/1) | 1.05 (1/1) | 1.23 (1/1) | - (0/1) |
 | HYPE | 1.04 (1/1) | 1.10 (1/1) | 1.20 (1/1) | 1.47 (1/1) | - (0/1) | - (0/1) |
-| SOL | 0.98 (1/1) | 1.01 (1/1) | 1.05 (1/1) | 1.09 (1/1) | - (0/1) | - (0/1) |
 | ZEC | 1.08 (1/1) | 1.38 (1/1) | 1.55 (1/1) | 1.61 (1/1) | - (0/1) | - (0/1) |
 
 _A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
@@ -47,7 +45,7 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 | ETH | 2 | 100% | $0.295 | $0.59 |
 | HYPE | 1 | 100% | $0.250 | $0.25 |
 | SOL | 1 | 100% | $0.240 | $0.24 |
-| XRP | 2 | 0% | $-0.521 | $-1.04 |
+| XRP | 1 | 0% | $-0.521 | $-0.52 |
 | ZEC | 2 | 100% | $0.445 | $0.89 |
 
 ## Closed trades by entry timing (all history)
