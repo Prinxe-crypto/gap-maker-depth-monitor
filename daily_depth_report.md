@@ -1,16 +1,16 @@
 # Daily Depth & Performance Report — 2026-09-21
 
-Generated at: 2026-09-21 14:34:49 UTC
+Generated at: 2026-09-21 14:36:50 UTC
 
 ## Summary (Last 24 hours)
 
 - New OPEN snapshots: **57**
-- New CLOSED trades: **75**
+- New CLOSED trades: **74**
 - Snapshot statuses: LEGACY_NO_STATUS: 37, SKIPPED_COST_EXCEEDED: 8, STALE_SNAPSHOT: 7, SKIPPED_INSUFFICIENT_DEPTH: 4, FILLED: 1
 
-- Total simulated profit: **$13.82**
-- Win rate: **77.3%**
-- Average entry cost: **$0.589**
+- Total simulated profit: **$13.46**
+- Win rate: **77.0%**
+- Average entry cost: **$0.588**
 
 ## Depth at Entry (valid snapshots only)
 
@@ -49,7 +49,7 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 | HYPE | 5 | 60% | $0.095 | $0.48 |
 | SOL | 6 | 67% | $0.040 | $0.24 |
 | XRP | 7 | 43% | $-0.119 | $-0.84 |
-| ZEC | 26 | 96% | $0.350 | $9.11 |
+| ZEC | 25 | 96% | $0.350 | $8.75 |
 
 ## Closed trades by entry timing (all history)
 
