@@ -1,15 +1,28 @@
 # Daily Depth & Performance Report — 2026-09-27
 
-Generated at: 2026-09-27 19:12:35 UTC
+Generated at: 2026-09-27 19:14:39 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **0**
+- New OPEN snapshots: **1**
 - New CLOSED trades: **0**
+- Snapshot statuses: SKIPPED_COST_EXCEEDED: 1
 
 ## Depth at Entry (valid snapshots only)
 
-_No valid (fresh, non-error) open snapshots in the last 24 hours._
+### Max size with combined VWAP <= $0.80 (contracts per leg)
+
+| Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
+|-------|---|------------|-------|------|----------------------|-------------|
+| BTC | 1 | 0 | 0 | 0 | 14.3 | 0.620 |
+
+### Average combined VWAP by size  (cell = avg cost, filled/N)
+
+| Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
+|-------|---|---|---|---|---|---|
+| BTC | 1.00 (1/1) | 1.00 (1/1) | 1.00 (1/1) | 1.00 (1/1) | 1.00 (1/1) | - (0/1) |
+
+_A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
 
 ## Closed trades by entry timing (all history)
 
