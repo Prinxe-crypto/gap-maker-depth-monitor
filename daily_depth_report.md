@@ -1,6 +1,6 @@
 # Daily Depth & Performance Report — 2026-09-28
 
-Generated at: 2026-09-28 21:32:38 UTC
+Generated at: 2026-09-28 21:34:43 UTC
 
 ## Summary (Last 24 hours)
 
@@ -34,11 +34,4 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 |-------|-------|----------|------------|--------------|
 | XRP | 1 | 0% | $-0.717 | $-0.72 |
 
-## Closed trades by entry timing (all history)
-
-| Entry time in window | Trades | Win rate | Avg cost | Avg profit | Total profit |
-|----------------------|--------|----------|----------|------------|--------------|
-| 0-3 min | 0 | - | - | - | - |
-| 3-7 min | 3 | 100% | $0.774 | $0.226 | $0.68 |
-| 7-11 min | 0 | - | - | - | - |
-| 11-15 min | 13 | 38% | $0.626 | $-0.241 | $-3.13 |
+_Entry-timing table unavailable: <urlopen error [Errno 104] Connection reset by peer>_
