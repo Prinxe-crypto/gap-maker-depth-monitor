@@ -1,6 +1,6 @@
 # Daily Depth & Performance Report — 2026-10-02
 
-Generated at: 2026-10-02 08:48:44 UTC
+Generated at: 2026-10-02 08:50:46 UTC
 
 ## Summary (Last 24 hours)
 
@@ -47,4 +47,4 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 | 0-3 min | 0 | - | - | - | - |
 | 3-7 min | 3 | 100% | $0.774 | $0.226 | $0.68 |
 | 7-11 min | 0 | - | - | - | - |
-| 11-15 min | 24 | 46% | $0.637 | $-0.179 | $-4.29 |
+| 11-15 min | 23 | 48% | $0.640 | $-0.162 | $-3.72 |
