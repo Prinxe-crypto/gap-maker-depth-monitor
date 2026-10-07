@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-10-07
 
-Generated at: 2026-10-07 15:06:32 UTC
+Generated at: 2026-10-07 15:19:11 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **6**
+- New OPEN snapshots: **5**
 - New CLOSED trades: **6**
-- Snapshot statuses: SKIPPED_COST_EXCEEDED: 3, FILLED: 2, STALE_SNAPSHOT: 1
+- Snapshot statuses: SKIPPED_COST_EXCEEDED: 2, FILLED: 2, STALE_SNAPSHOT: 1
 
 - Total simulated profit: **$-0.92**
 - Win rate: **50.0%**
@@ -20,7 +20,7 @@ Generated at: 2026-10-07 15:06:32 UTC
 |-------|---|------------|-------|------|----------------------|-------------|
 | BNB | 1 | 3409 | 3409 | 3409 | 14.3 | 0.555 |
 | BTC | 1 | 0 | 0 | 0 | 14.3 | 0.770 |
-| XRP | 3 | 93 | 0 | 3690 | 14.3 | 0.660 |
+| XRP | 2 | 1892 | 93 | 3690 | 14.3 | 0.627 |
 
 ### Average combined VWAP by size  (cell = avg cost, filled/N)
 
@@ -28,7 +28,7 @@ Generated at: 2026-10-07 15:06:32 UTC
 |-------|---|---|---|---|---|---|
 | BNB | 0.01 (1/1) | 0.01 (1/1) | 0.01 (1/1) | 0.02 (1/1) | - (0/1) | - (0/1) |
 | BTC | 0.82 (1/1) | 0.82 (1/1) | 0.82 (1/1) | 0.84 (1/1) | 1.19 (1/1) | - (0/1) |
-| XRP | 0.55 (3/3) | 0.58 (3/3) | 0.48 (2/3) | 0.57 (2/3) | - (0/3) | - (0/3) |
+| XRP | 0.40 (2/2) | 0.44 (2/2) | 0.08 (1/2) | 0.09 (1/2) | - (0/2) | - (0/2) |
 
 _A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
 
