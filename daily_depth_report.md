@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-10-08
 
-Generated at: 2026-10-08 01:44:42 UTC
+Generated at: 2026-10-08 01:46:35 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **6**
+- New OPEN snapshots: **5**
 - New CLOSED trades: **7**
-- Snapshot statuses: FILLED: 2, STALE_SNAPSHOT: 2, SKIPPED_COST_EXCEEDED: 1, SKIPPED_INSUFFICIENT_DEPTH: 1
+- Snapshot statuses: STALE_SNAPSHOT: 2, SKIPPED_COST_EXCEEDED: 1, FILLED: 1, SKIPPED_INSUFFICIENT_DEPTH: 1
 
 - Total simulated profit: **$0.40**
 - Win rate: **71.4%**
@@ -18,7 +18,6 @@ Generated at: 2026-10-08 01:44:42 UTC
 
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
-| BNB | 1 | 3409 | 3409 | 3409 | 14.3 | 0.555 |
 | ETH | 1 | 0 | 0 | 0 | 14.3 | 0.785 |
 | XRP | 2 | 1892 | 93 | 3690 | 14.3 | 0.627 |
 
@@ -26,7 +25,6 @@ Generated at: 2026-10-08 01:44:42 UTC
 
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
-| BNB | 0.01 (1/1) | 0.01 (1/1) | 0.01 (1/1) | 0.02 (1/1) | - (0/1) | - (0/1) |
 | ETH | 0.99 (1/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
 | XRP | 0.40 (2/2) | 0.44 (2/2) | 0.08 (1/2) | 0.09 (1/2) | - (0/2) | - (0/2) |
 
