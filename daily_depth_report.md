@@ -1,16 +1,16 @@
 # Daily Depth & Performance Report — 2026-10-12
 
-Generated at: 2026-10-12 23:50:44 UTC
+Generated at: 2026-10-12 23:52:43 UTC
 
 ## Summary (Last 24 hours)
 
 - New OPEN snapshots: **2**
-- New CLOSED trades: **4**
+- New CLOSED trades: **3**
 - Snapshot statuses: SKIPPED_COST_EXCEEDED: 1, FILLED: 1
 
-- Total simulated profit: **$-0.11**
-- Win rate: **75.0%**
-- Average entry cost: **$0.777**
+- Total simulated profit: **$-0.37**
+- Win rate: **66.7%**
+- Average entry cost: **$0.790**
 
 ## Depth at Entry (valid snapshots only)
 
@@ -35,7 +35,6 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 | Asset | Count | Win rate | Avg Profit | Total Profit |
 |-------|-------|----------|------------|--------------|
 | BTC | 2 | 100% | $0.200 | $0.40 |
-| ETH | 1 | 100% | $0.260 | $0.26 |
 | XRP | 1 | 0% | $-0.769 | $-0.77 |
 
 ## Closed trades by entry timing (all history)
