@@ -1,25 +1,15 @@
 # Daily Depth & Performance Report — 2026-10-13
 
-Generated at: 2026-10-13 05:24:37 UTC
+Generated at: 2026-10-13 05:26:35 UTC
 
 ## Summary (Last 24 hours)
 
 - New OPEN snapshots: **0**
-- New CLOSED trades: **1**
-
-- Total simulated profit: **$-0.77**
-- Win rate: **0.0%**
-- Average entry cost: **$0.769**
+- New CLOSED trades: **0**
 
 ## Depth at Entry (valid snapshots only)
 
 _No valid (fresh, non-error) open snapshots in the last 24 hours._
-
-## Closed trades
-
-| Asset | Count | Win rate | Avg Profit | Total Profit |
-|-------|-------|----------|------------|--------------|
-| XRP | 1 | 0% | $-0.769 | $-0.77 |
 
 ## Closed trades by entry timing (all history)
 
