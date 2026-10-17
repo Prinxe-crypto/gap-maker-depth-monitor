@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-10-17
 
-Generated at: 2026-10-17 23:56:37 UTC
+Generated at: 2026-10-17 23:58:43 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **10**
+- New OPEN snapshots: **9**
 - New CLOSED trades: **10**
-- Snapshot statuses: SKIPPED_COST_EXCEEDED: 3, STALE_SNAPSHOT: 3, FILLED: 3, SKIPPED_INSUFFICIENT_DEPTH: 1
+- Snapshot statuses: STALE_SNAPSHOT: 3, FILLED: 3, SKIPPED_COST_EXCEEDED: 2, SKIPPED_INSUFFICIENT_DEPTH: 1
 
 - Total simulated profit: **$2.19**
 - Win rate: **90.0%**
@@ -19,7 +19,7 @@ Generated at: 2026-10-17 23:56:37 UTC
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
 | BNB | 2 | 150 | 150 | 151 | 13.3 | 0.753 |
-| BTC | 3 | 0 | 0 | 28 | 13.9 | 0.700 |
+| BTC | 2 | 0 | 0 | 0 | 14.3 | 0.653 |
 | ETH | 1 | 0 | 0 | 0 | 14.3 | 0.539 |
 | SOL | 1 | 1443 | 1443 | 1443 | 14.3 | 0.735 |
 
@@ -28,7 +28,7 @@ Generated at: 2026-10-17 23:56:37 UTC
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
 | BNB | 0.70 (2/2) | 0.77 (2/2) | 1.16 (2/2) | 1.55 (1/2) | - (0/2) | - (0/2) |
-| BTC | 0.93 (3/3) | 0.96 (3/3) | 0.98 (3/3) | 0.99 (3/3) | 1.10 (2/3) | - (0/3) |
+| BTC | 1.01 (2/2) | 1.01 (2/2) | 1.02 (2/2) | 1.03 (2/2) | 1.00 (1/2) | - (0/2) |
 | ETH | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
 | SOL | 0.19 (1/1) | 0.21 (1/1) | 0.41 (1/1) | 0.68 (1/1) | - (0/1) | - (0/1) |
 
