@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-10-17
 
-Generated at: 2026-10-17 20:12:42 UTC
+Generated at: 2026-10-17 20:14:41 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **11**
+- New OPEN snapshots: **12**
 - New CLOSED trades: **11**
-- Snapshot statuses: STALE_SNAPSHOT: 4, SKIPPED_COST_EXCEEDED: 3, SKIPPED_INSUFFICIENT_DEPTH: 2, FILLED: 2
+- Snapshot statuses: STALE_SNAPSHOT: 4, SKIPPED_COST_EXCEEDED: 3, FILLED: 3, SKIPPED_INSUFFICIENT_DEPTH: 2
 
 - Total simulated profit: **$2.41**
 - Win rate: **90.9%**
@@ -22,6 +22,7 @@ Generated at: 2026-10-17 20:12:42 UTC
 | BTC | 3 | 0 | 0 | 28 | 13.9 | 0.700 |
 | ETH | 1 | 0 | 0 | 0 | 14.3 | 0.539 |
 | HYPE | 1 | 0 | 0 | 0 | 14.3 | 0.734 |
+| SOL | 1 | 1443 | 1443 | 1443 | 14.3 | 0.735 |
 
 ### Average combined VWAP by size  (cell = avg cost, filled/N)
 
@@ -31,6 +32,7 @@ Generated at: 2026-10-17 20:12:42 UTC
 | BTC | 0.93 (3/3) | 0.96 (3/3) | 0.98 (3/3) | 0.99 (3/3) | 1.10 (2/3) | - (0/3) |
 | ETH | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
 | HYPE | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
+| SOL | 0.19 (1/1) | 0.21 (1/1) | 0.41 (1/1) | 0.68 (1/1) | - (0/1) | - (0/1) |
 
 _A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
 
