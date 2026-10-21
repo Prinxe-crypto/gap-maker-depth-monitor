@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-10-21
 
-Generated at: 2026-10-21 22:40:36 UTC
+Generated at: 2026-10-21 22:42:44 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **3**
+- New OPEN snapshots: **2**
 - New CLOSED trades: **3**
-- Snapshot statuses: SKIPPED_COST_EXCEEDED: 2, FILLED: 1
+- Snapshot statuses: FILLED: 1, SKIPPED_COST_EXCEEDED: 1
 
 - Total simulated profit: **$-0.69**
 - Win rate: **33.3%**
@@ -18,7 +18,6 @@ Generated at: 2026-10-21 22:40:36 UTC
 
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
-| BTC | 1 | 30 | 30 | 30 | 12.3 | 0.774 |
 | DOGE | 1 | 12228 | 12228 | 12228 | 14.4 | 0.176 |
 | HYPE | 1 | 0 | 0 | 0 | 14.4 | 0.736 |
 
@@ -26,7 +25,6 @@ Generated at: 2026-10-21 22:40:36 UTC
 
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
-| BTC | 0.80 (1/1) | 0.81 (1/1) | 0.81 (1/1) | 0.81 (1/1) | 0.96 (1/1) | - (0/1) |
 | DOGE | 0.01 (1/1) | 0.01 (1/1) | 0.01 (1/1) | 0.01 (1/1) | 0.01 (1/1) | - (0/1) |
 | HYPE | 0.95 (1/1) | 0.96 (1/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
 
