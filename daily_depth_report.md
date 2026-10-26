@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-10-26
 
-Generated at: 2026-10-26 04:58:34 UTC
+Generated at: 2026-10-26 05:00:53 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **5**
+- New OPEN snapshots: **4**
 - New CLOSED trades: **9**
-- Snapshot statuses: STALE_SNAPSHOT: 2, SKIPPED_COST_EXCEEDED: 2, FILLED: 1
+- Snapshot statuses: SKIPPED_COST_EXCEEDED: 2, STALE_SNAPSHOT: 1, FILLED: 1
 
 - Total simulated profit: **$2.86**
 - Win rate: **100.0%**
