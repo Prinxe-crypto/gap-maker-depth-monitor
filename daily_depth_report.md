@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-10-26
 
-Generated at: 2026-10-26 18:58:42 UTC
+Generated at: 2026-10-26 19:00:47 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **3**
+- New OPEN snapshots: **2**
 - New CLOSED trades: **5**
-- Snapshot statuses: FILLED: 2, SKIPPED_COST_EXCEEDED: 1
+- Snapshot statuses: SKIPPED_COST_EXCEEDED: 1, FILLED: 1
 
 - Total simulated profit: **$0.39**
 - Win rate: **80.0%**
@@ -18,14 +18,14 @@ Generated at: 2026-10-26 18:58:42 UTC
 
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
-| BTC | 2 | 1279 | 1054 | 1504 | 13.8 | 0.699 |
+| BTC | 1 | 1054 | 1054 | 1054 | 14.3 | 0.708 |
 | XRP | 1 | 0 | 0 | 0 | 14.3 | 0.759 |
 
 ### Average combined VWAP by size  (cell = avg cost, filled/N)
 
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
-| BTC | 0.38 (2/2) | 0.42 (2/2) | 0.62 (2/2) | 0.73 (2/2) | 1.00 (1/2) | - (0/2) |
+| BTC | 0.26 (1/1) | 0.33 (1/1) | 0.67 (1/1) | 0.79 (1/1) | - (0/1) | - (0/1) |
 | XRP | 1.00 (1/1) | 1.00 (1/1) | 1.00 (1/1) | 1.00 (1/1) | - (0/1) | - (0/1) |
 
 _A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
