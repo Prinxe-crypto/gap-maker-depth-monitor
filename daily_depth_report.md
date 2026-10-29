@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-10-29
 
-Generated at: 2026-10-29 16:14:51 UTC
+Generated at: 2026-10-29 16:16:53 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **11**
+- New OPEN snapshots: **10**
 - New CLOSED trades: **13**
-- Snapshot statuses: STALE_SNAPSHOT: 9, SKIPPED_INSUFFICIENT_DEPTH: 1, FILLED: 1
+- Snapshot statuses: STALE_SNAPSHOT: 9, FILLED: 1
 
 - Total simulated profit: **$1.30**
 - Win rate: **61.5%**
@@ -19,14 +19,12 @@ Generated at: 2026-10-29 16:14:51 UTC
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
 | BNB | 1 | 495 | 495 | 495 | 14.4 | 0.566 |
-| ETH | 1 | 0 | 0 | 0 | 14.5 | 0.611 |
 
 ### Average combined VWAP by size  (cell = avg cost, filled/N)
 
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
 | BNB | 0.13 (1/1) | 0.50 (1/1) | 0.80 (1/1) | 0.95 (1/1) | - (0/1) | - (0/1) |
-| ETH | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
 
 _A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
 
