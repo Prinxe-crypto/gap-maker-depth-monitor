@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-11-03
 
-Generated at: 2026-11-03 09:12:38 UTC
+Generated at: 2026-11-03 09:14:51 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **7**
+- New OPEN snapshots: **6**
 - New CLOSED trades: **8**
-- Snapshot statuses: FILLED: 3, SKIPPED_COST_EXCEEDED: 2, STALE_SNAPSHOT: 2
+- Snapshot statuses: FILLED: 3, STALE_SNAPSHOT: 2, SKIPPED_COST_EXCEEDED: 1
 
 - Total simulated profit: **$-1.14**
 - Win rate: **50.0%**
@@ -18,7 +18,7 @@ Generated at: 2026-11-03 09:12:38 UTC
 
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
-| BNB | 2 | 243 | 34 | 452 | 13.5 | 0.733 |
+| BNB | 1 | 452 | 452 | 452 | 14.5 | 0.692 |
 | DOGE | 1 | 0 | 0 | 0 | 14.5 | 0.757 |
 | XRP | 2 | 2434 | 1517 | 3351 | 14.4 | 0.547 |
 
@@ -26,7 +26,7 @@ Generated at: 2026-11-03 09:12:38 UTC
 
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
-| BNB | 0.44 (2/2) | 0.61 (2/2) | 0.94 (2/2) | 1.20 (1/2) | - (0/2) | - (0/2) |
+| BNB | 0.11 (1/1) | 0.36 (1/1) | 0.82 (1/1) | - (0/1) | - (0/1) | - (0/1) |
 | DOGE | 1.00 (1/1) | 1.01 (1/1) | 1.01 (1/1) | 1.01 (1/1) | - (0/1) | - (0/1) |
 | XRP | 0.23 (2/2) | 0.23 (2/2) | 0.24 (2/2) | 0.24 (2/2) | - (0/2) | - (0/2) |
 
