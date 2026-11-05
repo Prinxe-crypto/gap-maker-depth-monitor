@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-11-05
 
-Generated at: 2026-11-05 23:44:51 UTC
+Generated at: 2026-11-05 23:46:41 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **20**
+- New OPEN snapshots: **19**
 - New CLOSED trades: **22**
-- Snapshot statuses: STALE_SNAPSHOT: 11, FILLED: 7, SKIPPED_INSUFFICIENT_DEPTH: 2
+- Snapshot statuses: STALE_SNAPSHOT: 11, FILLED: 7, SKIPPED_INSUFFICIENT_DEPTH: 1
 
 - Total simulated profit: **$0.07**
 - Win rate: **50.0%**
@@ -24,7 +24,7 @@ Generated at: 2026-11-05 23:44:51 UTC
 | ETH | 1 | 245 | 245 | 245 | 12.4 | 0.751 |
 | HYPE | 1 | 558 | 558 | 558 | 12.4 | 0.508 |
 | SOL | 1 | 503 | 503 | 503 | 12.4 | 0.598 |
-| XRP | 2 | 133 | 0 | 266 | 13.5 | 0.576 |
+| XRP | 1 | 266 | 266 | 266 | 12.4 | 0.689 |
 
 ### Average combined VWAP by size  (cell = avg cost, filled/N)
 
@@ -36,7 +36,7 @@ Generated at: 2026-11-05 23:44:51 UTC
 | ETH | 0.73 (1/1) | 0.75 (1/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
 | HYPE | 0.39 (1/1) | 0.51 (1/1) | 0.77 (1/1) | - (0/1) | - (0/1) | - (0/1) |
 | SOL | 0.54 (1/1) | 0.60 (1/1) | 0.80 (1/1) | - (0/1) | - (0/1) | - (0/1) |
-| XRP | 0.67 (1/2) | 0.71 (1/2) | 0.90 (1/2) | 0.98 (1/2) | - (0/2) | - (0/2) |
+| XRP | 0.67 (1/1) | 0.71 (1/1) | 0.90 (1/1) | 0.98 (1/1) | - (0/1) | - (0/1) |
 
 _A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
 
