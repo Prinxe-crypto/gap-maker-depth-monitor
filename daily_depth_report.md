@@ -1,12 +1,12 @@
 # Daily Depth & Performance Report — 2026-11-06
 
-Generated at: 2026-11-06 06:12:41 UTC
+Generated at: 2026-11-06 06:14:40 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **18**
+- New OPEN snapshots: **12**
 - New CLOSED trades: **19**
-- Snapshot statuses: STALE_SNAPSHOT: 11, FILLED: 7
+- Snapshot statuses: STALE_SNAPSHOT: 11, FILLED: 1
 
 - Total simulated profit: **$-0.19**
 - Win rate: **47.4%**
@@ -18,23 +18,13 @@ Generated at: 2026-11-06 06:12:41 UTC
 
 | Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
 |-------|---|------------|-------|------|----------------------|-------------|
-| BTC | 2 | 4710 | 3433 | 5988 | 13.4 | 0.680 |
-| DOGE | 1 | 499 | 499 | 499 | 12.4 | 0.515 |
-| ETH | 1 | 245 | 245 | 245 | 12.4 | 0.751 |
-| HYPE | 1 | 558 | 558 | 558 | 12.4 | 0.508 |
-| SOL | 1 | 503 | 503 | 503 | 12.4 | 0.598 |
-| XRP | 1 | 266 | 266 | 266 | 12.4 | 0.689 |
+| BTC | 1 | 3433 | 3433 | 3433 | 14.4 | 0.800 |
 
 ### Average combined VWAP by size  (cell = avg cost, filled/N)
 
 | Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
 |-------|---|---|---|---|---|---|
-| BTC | 0.47 (2/2) | 0.47 (2/2) | 0.49 (2/2) | 0.51 (2/2) | 0.83 (2/2) | - (0/2) |
-| DOGE | 0.56 (1/1) | 0.58 (1/1) | 0.80 (1/1) | 0.97 (1/1) | - (0/1) | - (0/1) |
-| ETH | 0.73 (1/1) | 0.75 (1/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
-| HYPE | 0.39 (1/1) | 0.51 (1/1) | 0.77 (1/1) | - (0/1) | - (0/1) | - (0/1) |
-| SOL | 0.54 (1/1) | 0.60 (1/1) | 0.80 (1/1) | - (0/1) | - (0/1) | - (0/1) |
-| XRP | 0.67 (1/1) | 0.71 (1/1) | 0.90 (1/1) | 0.98 (1/1) | - (0/1) | - (0/1) |
+| BTC | 0.40 (1/1) | 0.40 (1/1) | 0.44 (1/1) | 0.49 (1/1) | 0.89 (1/1) | - (0/1) |
 
 _A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
 
