@@ -1,25 +1,15 @@
 # Daily Depth & Performance Report — 2026-11-09
 
-Generated at: 2026-11-09 21:22:45 UTC
+Generated at: 2026-11-09 21:24:46 UTC
 
 ## Summary (Last 24 hours)
 
 - New OPEN snapshots: **0**
-- New CLOSED trades: **1**
-
-- Total simulated profit: **$-0.47**
-- Win rate: **0.0%**
-- Average entry cost: **$0.469**
+- New CLOSED trades: **0**
 
 ## Depth at Entry (valid snapshots only)
 
 _No valid (fresh, non-error) open snapshots in the last 24 hours._
-
-## Closed trades
-
-| Asset | Count | Win rate | Avg Profit | Total Profit |
-|-------|-------|----------|------------|--------------|
-| BNB | 1 | 0% | $-0.469 | $-0.47 |
 
 ## Closed trades by entry timing (all history)
 
