@@ -1,6 +1,6 @@
 # Daily Depth & Performance Report — 2026-11-20
 
-Generated at: 2026-11-20 22:12:55 UTC
+Generated at: 2026-11-20 22:14:50 UTC
 
 ## Summary (Last 24 hours)
 
@@ -35,11 +35,4 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 | BTC | 1 | 100% | $0.203 | $0.20 |
 | ETH | 1 | 100% | $0.257 | $0.26 |
 
-## Closed trades by entry timing (all history)
-
-| Entry time in window | Trades | Win rate | Avg cost | Avg profit | Total profit |
-|----------------------|--------|----------|----------|------------|--------------|
-| 0-3 min | 0 | - | - | - | - |
-| 3-7 min | 8 | 100% | $0.697 | $0.303 | $2.42 |
-| 7-11 min | 12 | 100% | $0.727 | $0.273 | $3.28 |
-| 11-15 min | 246 | 52% | $0.591 | $-0.067 | $-16.42 |
+_Entry-timing table unavailable: HTTP Error 503: Backend.max_conn reached_
