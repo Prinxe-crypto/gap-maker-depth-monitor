@@ -1,16 +1,16 @@
 # Daily Depth & Performance Report — 2026-11-20
 
-Generated at: 2026-11-20 06:18:45 UTC
+Generated at: 2026-11-20 06:20:50 UTC
 
 ## Summary (Last 24 hours)
 
 - New OPEN snapshots: **10**
-- New CLOSED trades: **9**
+- New CLOSED trades: **10**
 - Snapshot statuses: STALE_SNAPSHOT: 9, FILLED: 1
 
-- Total simulated profit: **$-0.02**
-- Win rate: **55.6%**
-- Average entry cost: **$0.558**
+- Total simulated profit: **$0.18**
+- Win rate: **60.0%**
+- Average entry cost: **$0.582**
 
 ## Depth at Entry (valid snapshots only)
 
@@ -33,7 +33,7 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 | Asset | Count | Win rate | Avg Profit | Total Profit |
 |-------|-------|----------|------------|--------------|
 | BNB | 1 | 100% | $0.490 | $0.49 |
-| BTC | 1 | 100% | $0.519 | $0.52 |
+| BTC | 2 | 100% | $0.361 | $0.72 |
 | DOGE | 1 | 0% | $-0.509 | $-0.51 |
 | ETH | 2 | 100% | $0.380 | $0.76 |
 | HYPE | 1 | 100% | $0.287 | $0.29 |
@@ -47,5 +47,5 @@ _A dash means no snapshot could fill that size on both legs. Dollars per leg is 
 |----------------------|--------|----------|----------|------------|--------------|
 | 0-3 min | 0 | - | - | - | - |
 | 3-7 min | 8 | 100% | $0.697 | $0.303 | $2.42 |
-| 7-11 min | 11 | 100% | $0.720 | $0.280 | $3.08 |
+| 7-11 min | 12 | 100% | $0.727 | $0.273 | $3.28 |
 | 11-15 min | 246 | 52% | $0.591 | $-0.067 | $-16.42 |
