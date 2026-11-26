@@ -1,38 +1,26 @@
 # Daily Depth & Performance Report — 2026-11-26
 
-Generated at: 2026-11-26 13:14:46 UTC
+Generated at: 2026-11-26 13:16:53 UTC
 
 ## Summary (Last 24 hours)
 
-- New OPEN snapshots: **10**
-- New CLOSED trades: **10**
-- Snapshot statuses: STALE_SNAPSHOT: 9, SKIPPED_INSUFFICIENT_DEPTH: 1
+- New OPEN snapshots: **9**
+- New CLOSED trades: **9**
+- Snapshot statuses: STALE_SNAPSHOT: 9
 
-- Total simulated profit: **$-1.59**
-- Win rate: **30.0%**
-- Average entry cost: **$0.459**
+- Total simulated profit: **$-1.94**
+- Win rate: **22.2%**
+- Average entry cost: **$0.438**
 
 ## Depth at Entry (valid snapshots only)
 
-### Max size with combined VWAP <= $0.80 (contracts per leg)
-
-| Asset | N | Median max | Worst | Best | Avg mins into window | Logged cost |
-|-------|---|------------|-------|------|----------------------|-------------|
-| BNB | 1 | 0 | 0 | 0 | 14.4 | 0.650 |
-
-### Average combined VWAP by size  (cell = avg cost, filled/N)
-
-| Asset | 10 | 100 | 500 | 1,000 | 5,000 | 25,000 |
-|-------|---|---|---|---|---|---|
-| BNB | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) | - (0/1) |
-
-_A dash means no snapshot could fill that size on both legs. Dollars per leg is roughly size x price._
+_No valid (fresh, non-error) open snapshots in the last 24 hours._
 
 ## Closed trades
 
 | Asset | Count | Win rate | Avg Profit | Total Profit |
 |-------|-------|----------|------------|--------------|
-| BNB | 3 | 33% | $-0.255 | $-0.77 |
+| BNB | 2 | 0% | $-0.557 | $-1.11 |
 | BTC | 1 | 0% | $-0.321 | $-0.32 |
 | DOGE | 1 | 0% | $-0.432 | $-0.43 |
 | ETH | 1 | 0% | $-0.371 | $-0.37 |
