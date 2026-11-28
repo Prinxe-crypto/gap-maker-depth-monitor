@@ -1,6 +1,6 @@
 # Daily Depth & Performance Report — 2026-11-28
 
-Generated at: 2026-11-28 19:58:46 UTC
+Generated at: 2026-11-28 20:00:49 UTC
 
 ## Summary (Last 24 hours)
 
